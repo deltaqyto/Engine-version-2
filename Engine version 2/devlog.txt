@@ -1,0 +1,111 @@
+8/10/2020
+Started new project. Discontinued old model due to incoherent design standards
+
+11/10/2020
+Finished basic maths libraries for 2d and 3d surfaces. Will be expanded to process matrices
+
+12/10/2020
+Render pipeline:
+Tris in obj coords
+convert to world coord
+convert to cam coord
+clip near and far
+-- clip sides?
+project to 2d
+clip sides?
+draw tris to screen
+
+22/10/2020
+Clip algorithm in progress
+Render pipline formed
+Tris overclipped
+
+23/10/2020
+Fixed overclipping
+Loaded sliced cube model for depth buffer testing
+Created depth buffer set and reset functions - to be timed
+calculated barycentric coords
+
+24/10/2020
+Solved depth mapping issues
+Can reliably render cube
+Mapped q,e to rotation
+Began work on object class
+Operator mapped vector and matrix maths
+
+25/10/2020
+Fixed operator mapping
+Rendering in a glitchy ortho - diagnose
+Created matrices for object and projection
+finished draw tri routine
+enabled line art
+removed value assignment code, moved to struct def
+
+28/10/2020
+diagnosed failed rendering
+Finished object rendering algo
+enable movement independent of camera
+object cube missing top and bottom
+object cube not matching up with other cube -  diagnose
+binding camera rotation to mouse
+redo rotation of camera
+Added matrix to camera
+
+31/10/2020
+Halloween
+Found possible fix to improper camera movement
+camera is better but neeeds more fixes
+
+1/11/2020
+Finally fixed rendering sequence
+Deprecating old rendering sequence
+Deprecating old wireframe renderer
+fixed cube model
+Added more cubes for testing
+Working on clipping algo
+
+8/11/2020
+Took a break
+Fixed clipping 1,2 points at far plane
+Fixed cube not rotating independently
+Seperated camera and cube rotation
+Fixed renderer to show missing face - the last face of a mesh was being ommited
+
+9/11/2020
+Seperated near and far clip functions
+Finalised far clip
+
+10/11/2020
+Finished clipping algo
+Connected to git
+
+
+Housekeeping:
+Fix cube mesh to be clockwise and complete
+Make sure barycentrics are recalculated at clipping
+
+Notes:
+Frust far is the dist from start to end of frust
+
+
+Op functions
+Clear depth buffer
+Quick normalize
+
+Op work
+replace with const references
+do zipping realtime?
+find cause of slowdown with large tris
+reformat and folderize
+std::map or std::unordered map
+use gpu
+move all vendor functions into a discrete wrapper
+move wrapper and vendors into folder
+remove return of temporary values
+Load objects and textures only when needed, then cache
+use uint 32
+write deg conversion and ensure it is used everywhere
+add option to bake a model into the world space
+Catch errors from functions
+fix casting errors
+Seperate models and objects
