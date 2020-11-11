@@ -117,8 +117,8 @@ int draw_tri(SDL_Renderer* renderer, std::vector<float>& buffer_out, tri3d trian
 			b3 = abs(1 - u - v);
 			depth_map_value = b3 * barycentric_depth_weights[0] + v * barycentric_depth_weights[1] + u * barycentric_depth_weights[2];
 			if (u >= 0 && v >= 0 && u + v < 1 && buffer_out[(y + i) * full_y_width + x + q] < depth_map_value) {
-				//SDL_SetRenderDrawColor(renderer, b3 * barycentric_depth_weights[0] * 10, v * barycentric_depth_weights[1] * 10, u * barycentric_depth_weights[2] * 10, 255);
-				SDL_SetRenderDrawColor(renderer, depth_map_value, depth_map_value, depth_map_value, 255);
+				// SDL_SetRenderDrawColor(renderer, b1 * barycentric_depth_weights[0] * 10, b2 * barycentric_depth_weights[1] * 10, b3 * barycentric_depth_weights[2] * 10, 255);
+				// SDL_SetRenderDrawColor(renderer, depth_map_value, depth_map_value, depth_map_value, 255);
 				SDL_RenderDrawPoint(renderer, (x + q), (y + i));
 				buffer_out[(y + i) * full_y_width + x + q] = depth_map_value;
 			}

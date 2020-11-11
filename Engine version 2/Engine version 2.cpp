@@ -22,8 +22,7 @@ int main(int argc, char* argv[]) {
 	// Create cube
 	object_info cube;
 	cube.verts = { -0.5, 0.5, 1, -0.5, 0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 1, -0.5, -0.5, 0, 0.5, -0.5, 1, -0.5, -0.5, 1 };
-	//cube.tris = { 0, 3, 1, 3, 2, 1, 1, 2, 4, 3, 5, 2, 0, 5, 3, 0, 6, 5, 6, 0, 1, 6, 1, 4 };
-	cube.tris = { 3, 2, 1};
+	cube.tris = { 0, 3, 1, 3, 2, 1, 1, 2, 4, 3, 5, 2, 0, 5, 3, 0, 6, 5, 6, 0, 1, 6, 1, 4 };
 	cube.model_org = { 0, 0, 5, 1 };
 	cube.model_rot = { 0, 0, 0, 1 };
 	zip_verts_tris(&cube);
