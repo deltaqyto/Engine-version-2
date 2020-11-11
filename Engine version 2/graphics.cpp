@@ -362,7 +362,6 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 		converted.z -= camera.frustrum.near;
 		converted.z /= camera.frustrum.far;
 		depth.x = converted.z;
-		converted.z = 1 / converted.z;
 		converted.q = 1;
 		converted_tris[0].p1 = converted;
 
@@ -372,7 +371,6 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 		converted.z -= camera.frustrum.near;
 		converted.z /= camera.frustrum.far;
 		depth.y = converted.z;
-		converted.z = 1 / converted.z;
 		converted.q = 1;
 		converted_tris[0].p2 = converted;
 
@@ -382,7 +380,6 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 		converted.z -= camera.frustrum.near;
 		converted.z /= camera.frustrum.far;
 		depth.z = converted.z;
-		converted.z = 1 / converted.z;
 		converted.q = 1;
 		converted_tris[0].p3 = converted;
 
@@ -407,12 +404,24 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 		SDL_SetRenderDrawColor(renderer, 255 - i * 255 / object.model_mesh.size(), i * 255 / object.model_mesh.size(), i * 255 / 2 / object.model_mesh.size(), 255); // Move back
 		switch (num_tris) { //Support for 2 cutting planes, giving 4 tris, abusing switch case as a goto function
 		case 4:
+			converted_tris[3].p1.z = 1 / converted_tris[3].p1.z;
+			converted_tris[3].p2.z = 1 / converted_tris[3].p2.z;
+			converted_tris[3].p3.z = 1 / converted_tris[3].p3.z;
 			draw_tri(renderer, depth_buffer, converted_tris[3], half_screen_x, half_screen_y);
 		case 3:
+			converted_tris[2].p1.z = 1 / converted_tris[2].p1.z;
+			converted_tris[2].p2.z = 1 / converted_tris[2].p2.z;
+			converted_tris[2].p3.z = 1 / converted_tris[2].p3.z;
 			draw_tri(renderer, depth_buffer, converted_tris[2], half_screen_x, half_screen_y);
 		case 2:
+			converted_tris[1].p1.z = 1 / converted_tris[1].p1.z;
+			converted_tris[1].p2.z = 1 / converted_tris[1].p2.z;
+			converted_tris[1].p3.z = 1 / converted_tris[1].p3.z;
 			draw_tri(renderer, depth_buffer, converted_tris[1], half_screen_x, half_screen_y);
 		case 1:
+			converted_tris[0].p1.z = 1 / converted_tris[0].p1.z;
+			converted_tris[0].p2.z = 1 / converted_tris[0].p2.z;
+			converted_tris[0].p3.z = 1 / converted_tris[0].p3.z;
 			draw_tri(renderer, depth_buffer, converted_tris[0], half_screen_x, half_screen_y);
 		default:
 			break;
@@ -423,119 +432,13 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 
 // Finite difference normal method - fast
 clip_tags::OutCode get_code(vec3d input, float limit) {
-	clip_tags::OutCode code;
-	code = clip_tags::INSIDE;          // initialised as being inside of [[clip window]]
-
-	//if (input.x < -limit)           // to the left of clip window
-	// code |= clip_tags::LEFT;
-	//else if (input.x > limit)      // to the right of clip window
-	// code |= clip_tags::RIGHT;
-	//if (input.y < -limit)           // below the clip window
-	// code |= clip_tags::BOTTOM;
-	//else if (input.y > limit)      // above the clip window
-	// code |= clip_tags::TOP;
-	if (input.z < 0)           // to the back of clip window  // Make this equal 0
+	clip_tags::OutCode code = clip_tags::INSIDE;
+	if (input.z < limit)           // to the back of clip window  // Make this equal 0
 		code |= clip_tags::NEAR;
-	else if (input.z > limit)      // to the front of clip window
+	else if (input.z > 1)      // to the front of clip window
 		code |= clip_tags::FAR;
 	return code;
 }
-
-// Cohen–Sutherland clipping algorithm clips a line from
-// P0 = (a.x, a.y) to P1 = (b.x, b.y) against a rectangle with
-// diagonal from (xmin, ymin) to (xmax, ymax).
-void clip_line(vec3d a, vec3d b, float limit, vec3d* outa, vec3d* outb) {
-	// compute outcodes for P0 - a, P1 - b, and whatever point lies outside the clip rectangle
-	clip_tags::OutCode outcode0 = get_code(a, limit);
-	clip_tags::OutCode outcode1 = get_code(b, limit);
-	bool accept = false;
-
-	while (true) {
-		if (!(outcode0 | outcode1)) {
-			// bitwise OR is 0: both points inside window; trivially accept and exit loop
-			accept = true;
-			break;
-		}
-		else if (outcode0 & outcode1) {
-			// bitwise AND is not 0: both points share an outside zone (LEFT, RIGHT, TOP,
-			// or BOTTOM), so both must be outside window; exit loop (accept is false)
-			break;
-		}
-		else {
-			// failed both tests, so calculate the line segment to clip
-			// from an outside point to an intersection with clip edge
-			double x = 0;
-			double y = 0;
-			double z = 0;
-
-			// At least one endpoint is outside the clip rectangle; pick it.
-			clip_tags::OutCode outcodeOut = outcode1 > outcode0 ? outcode1 : outcode0;
-
-			// Now find the intersection point;
-			// use formulas:
-			//   slope = (b.y - a.y) / (b.x - a.x)
-			//   x = a.x + (1 / slope) * (ym - a.y), where ym is ymin or ymax
-			//   y = a.y + slope * (xm - a.x), where xm is -limit or limit
-			// No need to worry about divide-by-zero because, in each case, the
-			// outcode bit being tested guarantees the denominator is non-zero
-			if (outcodeOut & clip_tags::TOP) {           // point is above the clip window
-				x = a.x + (b.x - a.x) * (limit - a.y) / (b.y - a.y);
-				y = limit;
-				z = a.z + (b.z - a.z) * (limit - a.y) / (b.y - a.y);
-			}
-			else if (outcodeOut & clip_tags::BOTTOM) { // point is below the clip window
-				x = a.x + (b.x - a.x) * (-limit - a.y) / (b.y - a.y);
-				y = -limit;
-				z = a.z + (b.z - a.z) * (-limit - a.y) / (b.y - a.y);
-			}
-			else if (outcodeOut & clip_tags::RIGHT) {  // point is to the right of clip window
-				y = a.y + (b.y - a.y) * (limit - a.x) / (b.x - a.x);
-				x = -limit;
-				z = a.z + (b.z - a.z) * (limit - a.x) / (b.x - a.x);
-			}
-			else if (outcodeOut & clip_tags::LEFT) {   // point is to the left of clip window
-				y = a.y + (b.y - a.y) * (-limit - a.x) / (b.x - a.x);
-				x = -limit;
-				z = a.z + (b.z - a.z) * (-limit - a.x) / (b.x - a.x);
-			}
-			else if (outcodeOut & clip_tags::NEAR) {  // point is to the back of clip window
-				y = a.y + (b.y - a.y) * (limit - a.x) / (b.x - a.x);
-				x = 0;
-				z = a.y + (b.y - a.y) * (limit - a.x) / (b.x - a.x);
-			}
-			else if (outcodeOut & clip_tags::FAR) {   // point is to the front of clip window
-				y = a.y + (b.y - a.y) * (-limit - a.x) / (b.x - a.x);
-				x = limit;
-				z = a.z + (b.z - a.z) * (limit - a.x) / (b.x - a.x);
-			}
-
-			// Now we move outside point to intersection point to clip
-			// and get ready for next pass.
-			if (outcodeOut == outcode0) {
-				a.x = x;
-				a.y = y;
-				a.z = z;
-				outcode0 = get_code(a, limit);
-			}
-			else {
-				b.x = x;
-				b.y = y;
-				a.z = z;
-				outcode1 = get_code(b, limit);
-			}
-		}
-	}
-	outa->x = a.x;
-	outa->y = a.y;
-	outa->z = a.z;
-	outa->q = 1;
-
-	outb->x = a.x;
-	outb->y = a.y;
-	outb->z = a.z;
-	outb->q = 1;   // merge pointer and copy of a
-}
-
 int clip_far(tri3d* converted_tri1, tri3d* converted_tri2, vec3d depth) {  // Return num of active tris
 // Converted tri 1 holds input
 	tri3d tmptri;
@@ -543,20 +446,20 @@ int clip_far(tri3d* converted_tri1, tri3d* converted_tri2, vec3d depth) {  // Re
 
 	tmptri.p1.x = converted_tri1->p1.x;
 	tmptri.p1.y = converted_tri1->p1.y;
-	tmptri.p1.z = depth.x;
+	tmptri.p1.z = converted_tri1->p1.z;
 
 	tmptri.p2.x = converted_tri1->p2.x;
 	tmptri.p2.y = converted_tri1->p2.y;
-	tmptri.p2.z = depth.y;
+	tmptri.p2.z = converted_tri1->p2.z;
 
 	tmptri.p3.x = converted_tri1->p3.x;
 	tmptri.p3.y = converted_tri1->p3.y;
-	tmptri.p3.z = depth.z;
+	tmptri.p3.z = converted_tri1->p3.z;
 
 	// Setup
-	clip_tags::OutCode outcode1 = get_code(tmptri.p1, 1);
-	clip_tags::OutCode outcode2 = get_code(tmptri.p2, 1);
-	clip_tags::OutCode outcode3 = get_code(tmptri.p3, 1);
+	clip_tags::OutCode outcode1 = get_code(tmptri.p1, 0.1f);
+	clip_tags::OutCode outcode2 = get_code(tmptri.p2, 0.1f);
+	clip_tags::OutCode outcode3 = get_code(tmptri.p3, 0.1f);
 
 	int farsum = (outcode1 & clip_tags::FAR) + (outcode2 & clip_tags::FAR) + (outcode3 & clip_tags::FAR);
 
@@ -672,20 +575,20 @@ int clip_near(tri3d* converted_tri1, tri3d* converted_tri2, vec3d depth) {  // R
 
 	tmptri.p1.x = converted_tri1->p1.x;
 	tmptri.p1.y = converted_tri1->p1.y;
-	tmptri.p1.z = depth.x;
+	tmptri.p1.z = converted_tri1->p1.z;
 
 	tmptri.p2.x = converted_tri1->p2.x;
 	tmptri.p2.y = converted_tri1->p2.y;
-	tmptri.p2.z = depth.y;
+	tmptri.p2.z = converted_tri1->p2.z;
 
 	tmptri.p3.x = converted_tri1->p3.x;
 	tmptri.p3.y = converted_tri1->p3.y;
-	tmptri.p3.z = depth.z;
+	tmptri.p3.z = converted_tri1->p3.z;
 
 	// Setup
-	clip_tags::OutCode outcode1 = get_code(tmptri.p1, 1);
-	clip_tags::OutCode outcode2 = get_code(tmptri.p2, 1);
-	clip_tags::OutCode outcode3 = get_code(tmptri.p3, 1);
+	clip_tags::OutCode outcode1 = get_code(tmptri.p1, 0.1f);
+	clip_tags::OutCode outcode2 = get_code(tmptri.p2, 0.1f);
+	clip_tags::OutCode outcode3 = get_code(tmptri.p3, 0.1f);
 
 	int nearsum = (outcode1 & clip_tags::NEAR) + (outcode2 & clip_tags::NEAR) + (outcode3 & clip_tags::NEAR);
 
@@ -694,7 +597,6 @@ int clip_near(tri3d* converted_tri1, tri3d* converted_tri2, vec3d depth) {  // R
 
 	int split_tri = 1;
 
-	// Clip far
 	switch (nearsum) {
 	case 16:
 		split_tri = 2;
@@ -787,16 +689,6 @@ int clip_near(tri3d* converted_tri1, tri3d* converted_tri2, vec3d depth) {  // R
 
 	default:
 		break;
-	}
-
-	converted_tri1->p1.z = 1 / converted_tri1->p1.z;
-	converted_tri1->p2.z = 1 / converted_tri1->p2.z;
-	converted_tri1->p3.z = 1 / converted_tri1->p3.z;
-
-	if (split_tri == 2) {
-		converted_tri2->p1.z = 1 / converted_tri2->p1.z;
-		converted_tri2->p2.z = 1 / converted_tri2->p2.z;
-		converted_tri2->p3.z = 1 / converted_tri2->p3.z;
 	}
 	return split_tri;
 }
