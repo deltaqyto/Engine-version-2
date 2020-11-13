@@ -7,8 +7,11 @@
 
 struct tags {
 	bool noclipping = false;
-	bool smooth_shade = true;
-	bool depth_test = true;
+	bool smooth_shade = true;//No imp
+	bool depth_test = true;	  // Still writes to buffer, no read
+	bool specular_shade = true; //No imp
+	bool diffuse_shade = true; //No imp
+	bool ambient_shade = true; //No imp
 };
 
 struct object_info {
@@ -30,5 +33,13 @@ private:
 };
 
 int zip_verts_tris(object_info* object);   //Move into object struct
+
+struct light {
+	vec3d direction = { 0, 0, 0, 1 };
+	vec3d color = { 255, 255, 255, 0 };  //RGB, last one unused
+	vec3d position = { 0, 0, 0, 1 };
+	float ambient = 0.1;
+	bool is_sun;
+};
 
 #endif

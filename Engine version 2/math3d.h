@@ -32,6 +32,8 @@ vec3d vec3d_by_const(vec3d a, float val);
 
 float vec3d_dot(vec3d a, vec3d b);
 
+vec3d vec3d_norm_cross(vec3d a, vec3d b);
+
 vec3d matrix_by_vect(matx3d a, vec3d b);
 
 vec3d to_vec(float comp_a, float comp_b, float comp_c, float comp_d);
@@ -42,7 +44,9 @@ ray3d seg_to_ray(vec3d a, vec3d b);
 
 int normalize(vec3d* a);
 
-int set_rotation(matx3d* input, vec3d angle, float anglex, float angley, float anglez);
+int set_rotation(matx3d* input, vec3d* angle);
+
+int set_cam_rotation(vec3d* angle, float anglex, float angley, float anglez);
 
 int delta_rotate(matx3d* input, vec3d angle, float anglex, float angley, float anglez);
 

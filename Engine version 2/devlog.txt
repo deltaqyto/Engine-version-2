@@ -79,13 +79,32 @@ Finalised far clip
 Finished clipping algo
 Connected to git
 
+12/11/2020
+Clipping working mostly - glitchy around edges
+included methods to find normals
+Implementing shading models	- flat ambient and diffuse
+Noticing shapes forming on rendered. Not clipping related.
+added normal data to tris
+
+To do for next user:
+normalize normals
+Bind debug shading to key
+Bind lighting to tags
+Fix clipping issues
+
 
 Housekeeping:
 Fix cube mesh to be clockwise and complete
 Make sure barycentrics are recalculated at clipping
 
 Notes:
-Frust far is the dist from start to end of frust
+
+
+Render procedure:
+Setup
+For each object, 
+	render object
+Clean up
 
 
 Op functions
@@ -109,3 +128,4 @@ add option to bake a model into the world space
 Catch errors from functions
 fix casting errors
 Seperate models and objects
+investigate Finite difference normal method - fast

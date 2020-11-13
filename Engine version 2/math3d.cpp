@@ -47,7 +47,6 @@ int fast_seg_plane() {
 	return 0;
 }
 
-
 int ray_plane_intersect(ray3d ray, plane plane, float* time, float* collisionx, float* collisiony, float* collisionz) {
 
 	// Plane clipper found on 358
@@ -156,14 +155,10 @@ vec3d to_vec(float comp_a, float comp_b, float comp_c, float comp_d) {
 	return out;
 }
 
-int set_rotation(matx3d* input, vec3d angle, float anglex, float angley, float anglez) {
-	angle.x += anglex;
-	angle.y += angley;
-	angle.z += anglez;
-
-	float x_rot = (anglex) * 0.0174f;
-	float y_rot = (angley) * 0.0174f;
-	float z_rot = (anglez) * 0.0174f;// 3.14/180 -> radian conversion
+int set_rotation(matx3d* input, vec3d* angle) {
+	float x_rot = (angle->x) * 3.1415/180;
+	float y_rot = (angle->y) * 3.1415/180;
+	float z_rot = (angle->z) * 3.1415/180;//radian conversion
 
 	matx3d x = {
 	{1, 0, 0, 0},
@@ -203,6 +198,13 @@ int set_rotation(matx3d* input, vec3d angle, float anglex, float angley, float a
 	input->d.x = final_angle.d.x;
 	input->d.y = final_angle.d.y;
 	input->d.z = final_angle.d.z;
+	return 0;
+}
+
+int set_cam_rotation(vec3d* angle, float anglex, float angley, float anglez) {
+	angle->x = anglex;
+	angle->y = angley;
+	angle->z = anglez;
 	return 0;
 }
 
@@ -288,5 +290,13 @@ vec3d operator*(matx3d a, vec3d b) {
 	out.y = a.b.x * b.x + a.b.y * b.y + a.b.z * b.z + a.b.q * b.q;
 	out.z = a.c.x * b.x + a.c.y * b.y + a.c.z * b.z + a.c.q * b.q;
 	out.q = a.d.x * b.x + a.d.y * b.y + a.d.z * b.z + a.d.q * b.q;
+	return out;
+}
+
+vec3d vec3d_norm_cross(vec3d a, vec3d b){
+	vec3d out;
+	out.x = a.y*b.z - a.z*b.y;
+	out.y = a.z*b.x - a.x*b.z;
+	out.z = a.x*b.y - a.y*b.x;
 	return out;
 }

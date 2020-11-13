@@ -27,14 +27,27 @@ int main(int argc, char* argv[]) {
 	cube.model_rot = { 0, 0, 0, 1 };
 	zip_verts_tris(&cube);
 
+	object_info ground;
+	ground.verts = {-10, -10, 1, 10, -10, 1, -10, 10, 1, 10, 10, 1 };
+	ground.tris = { 0, 1, 2, 1, 3, 2 };
+	ground.model_org = { 0, 0, 5, 1 };
+	ground.model_rot = { 0, 0, 0, 1 };
+	zip_verts_tris(&ground);
+
 	frust frustrum;
 	frustrum.hor_res = half_screen_size[0] * 2;
 	frustrum.ver_res = half_screen_size[1] * 2;
-	frustrum.near = 1;
+	frustrum.near = 0.04f;
 	frustrum.far = 30;
 
 	camera camera;
 	camera.frustrum = frustrum;
+
+	light light;
+	light.is_sun = true;
+	light.direction = {1, 1, 0, 0};
+
+	float time = 0;
 
 	std::vector<float> depth_buffer = {};
 	depth_buffer.resize(4 * static_cast<__int64>(half_screen_size[0]) * static_cast<__int64>(half_screen_size[1]));
@@ -45,7 +58,6 @@ int main(int argc, char* argv[]) {
 		SDL_Event event_handle;
 		window = win_make_window(half_screen_size[0] * 2, half_screen_size[1] * 2, flags);
 		screenSurface = SDL_GetWindowSurface(window);
-		Uint32 _cdecl background_color = SDL_MapRGB(screenSurface->format, 0x00, 0x00, 0x00);
 		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
 		bool quit = false;
@@ -102,11 +114,13 @@ int main(int argc, char* argv[]) {
 						break;
 
 					case SDLK_p: //Debug print, unmapped so far
-						camera.frustrum.far -= 0.01;
+						camera.frustrum.near -= 0.001;
+						std::cout << camera.frustrum.near << '\n';
 						break;
 
 					case SDLK_o: //Debug print, unmapped so far
-						camera.frustrum.far += 0.01;
+						camera.frustrum.near += 0.001;
+						std::cout << camera.frustrum.near << '\n';
 						break;
 
 					case SDLK_x: //Debug stop
@@ -116,13 +130,19 @@ int main(int argc, char* argv[]) {
 				}
 			}
 
-			set_rotation(&camera.matrix, camera.angles, -mouse_position[1], mouse_position[0], 0);
+			time += 0.01;
+			
+			light.direction = { 0, sin(time), cos(time), 0 };
 
-			SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-			SDL_RenderClear(renderer);
-
+			set_cam_rotation(&camera.angles, -mouse_position[1], mouse_position[0], 0);
 			clear_depth_buffer(depth_buffer, &half_screen_size[0], &half_screen_size[1]);
-			full_convert_obj(renderer, cube, camera, depth_buffer, half_screen_size[0], half_screen_size[1]);
+			setup_render(&camera, renderer);
+
+
+			full_convert_obj(renderer, cube, camera, depth_buffer, half_screen_size[0], half_screen_size[1], light);
+			full_convert_obj(renderer, ground, camera, depth_buffer, half_screen_size[0], half_screen_size[1], light);
+			
+			
 			SDL_RenderPresent(renderer);
 		}
 	}
