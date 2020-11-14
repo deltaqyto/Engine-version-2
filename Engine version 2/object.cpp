@@ -29,3 +29,7 @@ int zip_verts_tris(object_info* object) {
     object->set_zipped();
     return 0;
 }
+
+int load_from_obj(object_info* object) {
+
+}

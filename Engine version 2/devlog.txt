@@ -86,16 +86,31 @@ Implementing shading models	- flat ambient and diffuse
 Noticing shapes forming on rendered. Not clipping related.
 added normal data to tris
 
+13/11/2020
+Fixed clipping issues - moved projection after clip
+normalized normals in cross product
+Stopped acne due to depth filtering
+
+14/11/2020
+Fixed most warning messages regarding casting errors
+Added method to draw a buffer. Move regular drawing here
+Found issue causing artifacts on screen - depth buffer looped horizontally and clipped itself
+
+15/11/2020
+Fixed depth buffer loop error
+Seriously considering GPU usage
+Implemented backface culling
+
 To do for next user:
-normalize normals
-Bind debug shading to key
-Bind lighting to tags
-Fix clipping issues
+Fix triangle early quit optimisation  -- kinda gay, will need to rework if gpu is used anyway
+Make load obj possible
+make ground plane actually ground
 
 
 Housekeeping:
 Fix cube mesh to be clockwise and complete
 Make sure barycentrics are recalculated at clipping
+Check if half size screens are actually benificial
 
 Notes:
 
@@ -106,12 +121,24 @@ For each object,
 	render object
 Clean up
 
+Render obj:
+	check validity
+	Find conversion matrix
+	for each tri
+		convert to ccv
+		clip tri
+		find normal
+		find color
+		project
+		draw
+
 
 Op functions
 Clear depth buffer
 Quick normalize
 
 Op work
+Clip by object
 replace with const references
 do zipping realtime?
 find cause of slowdown with large tris

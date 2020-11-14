@@ -72,7 +72,7 @@ int ray_plane_intersect(ray3d ray, plane plane, float* time, float* collisionx, 
 
 int get_inverse(matx3d* cam_matx) {
 	matx3d m = *cam_matx;
-	double det;
+	float det;
 	int i;
 
 	cam_matx->a.x = m.b.y * m.c.z * m.d.q - m.b.y * m.c.q * m.d.z - m.c.y * m.b.z * m.d.q + m.c.y * m.b.q * m.d.z + m.d.y * m.b.z * m.c.q - m.d.y * m.b.q * m.c.z;
@@ -295,8 +295,10 @@ vec3d operator*(matx3d a, vec3d b) {
 
 vec3d vec3d_norm_cross(vec3d a, vec3d b){
 	vec3d out;
-	out.x = a.y*b.z - a.z*b.y;
-	out.y = a.z*b.x - a.x*b.z;
-	out.z = a.x*b.y - a.y*b.x;
+	float len = pow(pow(a.x - b.x, 2) + pow(a.y - b.y, 2) + pow(a.z - b.z, 2), 0.5);
+	out.x = (a.y*b.z - a.z*b.y)/ len;
+	out.y = (a.z*b.x - a.x*b.z)/ len;
+	out.z = (a.x*b.y - a.y*b.x)/ len;
+
 	return out;
 }

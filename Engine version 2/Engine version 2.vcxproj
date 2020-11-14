@@ -153,6 +153,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="debug.cpp" />
     <ClCompile Include="Engine version 2.cpp" />
     <ClCompile Include="graphics.cpp" />
     <ClCompile Include="math.cpp" />

@@ -10,7 +10,7 @@ struct tri3d {
 	vec3d normal;
 };
 
-int get_normal(tri3d* tri);
+int get_normal_from_tri(tri3d* tri);
 
 #endif
 

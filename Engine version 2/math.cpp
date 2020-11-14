@@ -36,10 +36,6 @@ float vect_dot_vect(vector a, vector b) {
 	return(a.x * b.x + a.y * b.y + a.q * b.q);
 }
 
-float vect_dot_vect(vector2d a, vector2d b) {
-	return(a.x * b.x + a.y * b.y);
-}
-
 point ray_pos_from_t(ray a, float t) {
 	point q;
 	return a.org;
@@ -92,4 +88,9 @@ int seg_seg_intersect(seg a, seg b, float* seg1_time, float* seg2_time, float* c
 
 float flat_cross_product(vector2d a, vector2d b) {
 	return(a.x * b.y - a.y * b.x); // Return z component only
+}
+
+
+float vect_dot_vect(vector2d a, vector2d b) {
+	return(a.x * b.x + a.y * b.y);
 }

@@ -25,32 +25,34 @@ int main(int argc, char* argv[]) {
 	cube.tris = { 0, 3, 1, 3, 2, 1, 1, 2, 4, 3, 5, 2, 0, 5, 3, 0, 6, 5, 6, 0, 1, 6, 1, 4 };
 	cube.model_org = { 0, 0, 5, 1 };
 	cube.model_rot = { 0, 0, 0, 1 };
+	cube.tags.fullbright = true;
 	zip_verts_tris(&cube);
 
 	object_info ground;
-	ground.verts = {-10, -10, 1, 10, -10, 1, -10, 10, 1, 10, 10, 1 };
+	ground.verts = { -10, -10, 1, 10, -10, 1, -10, 10, 1, 10, 10, 1 };
 	ground.tris = { 0, 1, 2, 1, 3, 2 };
-	ground.model_org = { 0, 0, 5, 1 };
+	ground.model_org = { 0, 0, 0, 1 };
 	ground.model_rot = { 0, 0, 0, 1 };
+	ground.tags.fullbright = true;
 	zip_verts_tris(&ground);
 
 	frust frustrum;
 	frustrum.hor_res = half_screen_size[0] * 2;
 	frustrum.ver_res = half_screen_size[1] * 2;
-	frustrum.near = 0.04f;
-	frustrum.far = 30;
+	frustrum.near = 1;
+	frustrum.far = 10;
 
 	camera camera;
 	camera.frustrum = frustrum;
 
 	light light;
 	light.is_sun = true;
-	light.direction = {1, 1, 0, 0};
+	light.direction = { 1, 1, 0, 0 };
 
 	float time = 0;
 
 	std::vector<float> depth_buffer = {};
-	depth_buffer.resize(4 * static_cast<__int64>(half_screen_size[0]) * static_cast<__int64>(half_screen_size[1]));
+	depth_buffer.resize(4 * (static_cast<__int64>(half_screen_size[0]) + 1) * (static_cast<__int64>(half_screen_size[1]) + 1));
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError()); // Catch startup errors
 
@@ -58,7 +60,7 @@ int main(int argc, char* argv[]) {
 		SDL_Event event_handle;
 		window = win_make_window(half_screen_size[0] * 2, half_screen_size[1] * 2, flags);
 		screenSurface = SDL_GetWindowSurface(window);
-		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
 		bool quit = false;
 		while (!quit) {
@@ -90,7 +92,7 @@ int main(int argc, char* argv[]) {
 						break;
 
 					case SDLK_q:
-						cube.model_rot.z += 5; // Rotation doesnt work properly
+						cube.model_rot.z += 5;
 						break;
 
 					case SDLK_e:
@@ -130,19 +132,18 @@ int main(int argc, char* argv[]) {
 				}
 			}
 
-			time += 0.01;
-			
+			time += 0.02;
+
 			light.direction = { 0, sin(time), cos(time), 0 };
 
-			set_cam_rotation(&camera.angles, -mouse_position[1], mouse_position[0], 0);
+			set_cam_rotation(&camera.angles, mouse_position[1] / 2, mouse_position[0] / 2, 0);
 			clear_depth_buffer(depth_buffer, &half_screen_size[0], &half_screen_size[1]);
 			setup_render(&camera, renderer);
 
-
 			full_convert_obj(renderer, cube, camera, depth_buffer, half_screen_size[0], half_screen_size[1], light);
-			full_convert_obj(renderer, ground, camera, depth_buffer, half_screen_size[0], half_screen_size[1], light);
-			
-			
+			//full_convert_obj(renderer, ground, camera, depth_buffer, half_screen_size[0], half_screen_size[1], light);
+			//draw_buffer(renderer, depth_buffer, half_screen_size[0], half_screen_size[1]);
+
 			SDL_RenderPresent(renderer);
 		}
 	}
