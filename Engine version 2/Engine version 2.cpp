@@ -26,13 +26,25 @@ int main(int argc, char* argv[]) {
 	cube.model_org = { 0, 0, 5, 1 };
 	cube.model_rot = { 0, 0, 0, 1 };
 	cube.tags.fullbright = true;
+	cube.tags.debug_color = true;
+	cube.tags.show_object = false;
 	zip_verts_tris(&cube);
+
+	object_info dragon;
+	load_from_obj(&dragon, "dragondown.obj", 0);
+	dragon.model_org = { 5, -5, 5, 1 };
+	dragon.model_rot = { 0, 0, 0, 1 };
+	dragon.color = { 252, 177, 3, 255};
+	dragon.tags.fullbright = false;
+	dragon.tags.bfc = false;
+	zip_verts_tris(&dragon);
 
 	object_info ground;
 	ground.verts = { -10, -10, 1, 10, -10, 1, -10, 10, 1, 10, 10, 1 };
 	ground.tris = { 0, 1, 2, 1, 3, 2 };
 	ground.model_org = { 0, 0, 0, 1 };
 	ground.model_rot = { 0, 0, 0, 1 };
+	ground.color = { 206, 252, 3, 255};
 	ground.tags.fullbright = true;
 	zip_verts_tris(&ground);
 
@@ -50,6 +62,7 @@ int main(int argc, char* argv[]) {
 	light.direction = { 1, 1, 0, 0 };
 
 	float time = 0;
+	bool rotate = true;
 
 	std::vector<float> depth_buffer = {};
 	depth_buffer.resize(4 * (static_cast<__int64>(half_screen_size[0]) + 1) * (static_cast<__int64>(half_screen_size[1]) + 1));
@@ -93,36 +106,40 @@ int main(int argc, char* argv[]) {
 
 					case SDLK_q:
 						cube.model_rot.z += 5;
+						dragon.model_rot.z += 5;
 						break;
 
 					case SDLK_e:
 						cube.model_rot.z -= 5;
+						dragon.model_rot.z -= 5;
 						break;
 
 					case SDLK_w:
 						cube.model_rot.x += 5;
+						dragon.model_rot.x += 5;
 						break;
 
 					case SDLK_s:
 						cube.model_rot.x -= 5;
+						dragon.model_rot.x -= 5;
 						break;
 
 					case SDLK_a:
 						cube.model_rot.y += 5;
+						dragon.model_rot.y += 5;
 						break;
 
 					case SDLK_d:
 						cube.model_rot.y -= 5;
+						dragon.model_rot.y -= 5;
 						break;
 
 					case SDLK_p: //Debug print, unmapped so far
-						camera.frustrum.near -= 0.001;
-						std::cout << camera.frustrum.near << '\n';
+						rotate = false;
 						break;
 
 					case SDLK_o: //Debug print, unmapped so far
-						camera.frustrum.near += 0.001;
-						std::cout << camera.frustrum.near << '\n';
+						rotate = true;
 						break;
 
 					case SDLK_x: //Debug stop
@@ -131,8 +148,9 @@ int main(int argc, char* argv[]) {
 					}
 				}
 			}
-
-			time += 0.02;
+			if (rotate) {
+				time += 0.02;
+			}
 
 			light.direction = { 0, sin(time), cos(time), 0 };
 
@@ -141,6 +159,7 @@ int main(int argc, char* argv[]) {
 			setup_render(&camera, renderer);
 
 			full_convert_obj(renderer, cube, camera, depth_buffer, half_screen_size[0], half_screen_size[1], light);
+			full_convert_obj(renderer, dragon, camera, depth_buffer, half_screen_size[0], half_screen_size[1], light);
 			//full_convert_obj(renderer, ground, camera, depth_buffer, half_screen_size[0], half_screen_size[1], light);
 			//draw_buffer(renderer, depth_buffer, half_screen_size[0], half_screen_size[1]);
 

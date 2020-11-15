@@ -30,6 +30,58 @@ int zip_verts_tris(object_info* object) {
     return 0;
 }
 
-int load_from_obj(object_info* object) {
+int load_from_obj(object_info* object, std::string file_name, int type) {
+    std::ifstream file(file_name);
+    if (!file.is_open()) std::cout << "Could not open file: " << file_name << '\n';
+    std::string line;
+    std::vector <std::string> sub_line;
+    std::vector <std::vector<std::string>> sub_sub_line;
+    switch (type) {
+    case 0:
+        while (getline(file, line)) {
+            if (line[0] != '#' && line[0] != 'm' && line[0] != 'o' && line[0] != 's' && line[1] != 't' && line[1] != 'n' && line[0] != 'u') {
+                switch (line[0]) {
+                case 'v':
+                    sub_line = split(line, ' ');
+                    object->verts.push_back(stof(sub_line[1]));
+                    object->verts.push_back(stof(sub_line[2]));
+                    object->verts.push_back(stof(sub_line[3]));
+                    break;
 
+                case 'f':
+                    sub_line = split(line, ' ');
+                    sub_sub_line = split(sub_line, ' ');
+                    object->tris.push_back(stoi(sub_sub_line[1][0]) - 1);
+                    object->tris.push_back(stoi(sub_sub_line[2][0]) - 1);
+                    object->tris.push_back(stoi(sub_sub_line[3][0]) - 1);
+
+                    object->tris.push_back(stoi(sub_sub_line[1][0]) - 1);
+                    object->tris.push_back(stoi(sub_sub_line[3][0]) - 1);
+                    object->tris.push_back(stoi(sub_sub_line[4][0]) - 1);
+                    break;
+                }
+            }
+    case 1:
+        while (getline(file, line)) {
+            if (line[0] != '#' && line[0] != 'm' && line[0] != 'o' && line[0] != 's' && line[1] != 't' && line[1] != 'n' && line[0] != 'u' && line[0] != 'g') {
+                switch (line[0]) {
+                case 'v':
+                    sub_line = split(line, ' ');
+                    object->verts.push_back(stof(sub_line[1]));
+                    object->verts.push_back(stof(sub_line[2]));
+                    object->verts.push_back(stof(sub_line[3]));
+                    break;
+
+                case 'f':
+                    sub_line = split(line, ' ');
+                    object->tris.push_back(stoi(sub_line[1]) - 1);
+                    object->tris.push_back(stoi(sub_line[2]) - 1);
+                    object->tris.push_back(stoi(sub_line[3]) - 1);
+                    break;
+                }
+            }
+        }
+        }
+    }
+    return 0;
 }

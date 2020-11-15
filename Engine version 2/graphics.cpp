@@ -211,8 +211,10 @@ void projection_matrix(matx3d* projection_matx, camera camera, int type) {   // 
 }
 
 int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, std::vector<float>& depth_buffer, int half_screen_x, int half_screen_y, light light) {
-	// Check validity
-	if (!object.get_zipped()) { return 1; } // Unzipped mesh error
+	if (!object.tags.show_object) return 0; // Object is hidden
+	
+											// Check validity
+	if (!object.get_zipped()) return 1; // Unzipped mesh error
 
 	// Make matrices
 	matx3d cam_world = camera.matrix;
@@ -230,6 +232,7 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 	short int num_tris2 = 1;
 	vec3d depth;
 	vec3d converted;
+	vec3d color;
 	float htan_angle = tan(camera.frustrum.horfov / 2);
 	float vtan_angle = tan(camera.frustrum.verfov / 2);
 
@@ -242,7 +245,7 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 		converted_tris[0].p3 = cam_obj * object.model_mesh[i].p3;
 
 		get_normal_from_tri(&converted_tris[0]); // Perform back face culling
-		if (vec3d_dot(converted_tris->normal, 
+		if (object.tags.bfc && vec3d_dot(converted_tris->normal, 
 			{ converted_tris[0].p1.x - camera.camera_vect.x,
 			  converted_tris[0].p1.y - camera.camera_vect.y,
 			  converted_tris[0].p1.z - camera.camera_vect.z, 1 }) >= 0) {
@@ -272,7 +275,11 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 		if (!object.tags.fullbright) {
 			brightness = std::min(light.ambient + std::max(vec3d_dot(converted_tris[0].normal, light.direction), 0.0f), 1.0f);
 		}
-		vec3d color = { 255 - i * 255 / object.model_mesh.size(), i * 255 / object.model_mesh.size(), i * 255 / 2 / object.model_mesh.size(), 255 };
+		if (object.tags.debug_color) {
+			color = { 255 * float(i) / object.tris.size(), 255 -255* float(i) / object.tris.size(),float(i) / (2*object.tris.size()), 255 };
+		} else {
+			color = object.color;
+		}
 		SDL_SetRenderDrawColor(renderer, (Uint8)color.x * brightness, (Uint8)color.y * brightness, (Uint8)color.z * brightness, (Uint8)color.q);
 
 		// Draw to screen

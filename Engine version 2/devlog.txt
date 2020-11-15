@@ -100,11 +100,15 @@ Found issue causing artifacts on screen - depth buffer looped horizontally and c
 Fixed depth buffer loop error
 Seriously considering GPU usage
 Implemented backface culling
+Implemented text libraries
+Implemented load from obj, added a second cube
+
+16/11/2020
+Implemented a single color per object
 
 To do for next user:
+Fix bad bfc
 Fix triangle early quit optimisation  -- kinda gay, will need to rework if gpu is used anyway
-Make load obj possible
-make ground plane actually ground
 
 
 Housekeeping:
