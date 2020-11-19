@@ -1,4 +1,5 @@
 #include "math3d.h"
+#include "iostream"
 #include <math.h>
 
 float vec3d_dot(vec3d a, vec3d b) {
@@ -155,56 +156,46 @@ vec3d to_vec(float comp_a, float comp_b, float comp_c, float comp_d) {
 	return out;
 }
 
-int set_rotation(matx3d* input, vec3d* angle) {
-	float x_rot = (angle->x) * 3.1415/180;
-	float y_rot = (angle->y) * 3.1415/180;
-	float z_rot = (angle->z) * 3.1415/180;//radian conversion
+int set_rotation(matx3d* input, vec3d* normal) {
+	vec3d top = { 0, 0, 1, 1 };
+	vec3d forward = { normal->x, normal->y, normal->z, 1 };
+	vec3d right = vec3d_norm_cross(top, forward);
+	vec3d up = vec3d_norm_cross(forward, right);
 
-	matx3d x = {
-	{1, 0, 0, 0},
-	{0, cos(x_rot), -sin(x_rot), 0},
-	{0, sin(x_rot), cos(x_rot), 0},
-	{0, 0, 0, 1}
-	};
+	input->a.x = right.x;
+	input->a.y = up.x;
+	input->a.z = forward.x;
 
-	matx3d y = {
-	{cos(y_rot), 0, sin(y_rot), 0},
-	{0, 1, 0, 0},
-	{-sin(y_rot), 0, cos(y_rot), 0},
-	{0, 0, 0, 1}
-	};
+	input->b.x = right.y;
+	input->b.y = up.y;
+	input->b.z = forward.y;
 
-	matx3d z = {
-	{cos(z_rot), -sin(z_rot), 0, 0},
-	{sin(z_rot), cos(z_rot), 0, 0},
-	{0, 0, 1, 0},
-	{0, 0, 0, 1}
-	};
+	input->c.x = right.z;
+	input->c.y = up.z;
+	input->c.z = forward.z;
 
-	matx3d final_angle = x * y * z;
+	/*input->a.x = forward.x;
+	input->a.y = right.x;
+	input->a.z = up.x;
 
-	input->a.x = final_angle.a.x;
-	input->a.y = final_angle.a.y;
-	input->a.z = final_angle.a.z;
+	input->b.x = forward.y;
+	input->b.y = right.y;
+	input->b.z = up.y;
 
-	input->b.x = final_angle.b.x;
-	input->b.y = final_angle.b.y;
-	input->b.z = final_angle.b.z;
+	input->c.x = forward.z;
+	input->c.y = right.z;
+	input->c.z = up.z; */
 
-	input->c.x = final_angle.c.x;
-	input->c.y = final_angle.c.y;
-	input->c.z = final_angle.c.z;
-
-	input->d.x = final_angle.d.x;
-	input->d.y = final_angle.d.y;
-	input->d.z = final_angle.d.z;
+	input->d.x = 0;
+	input->d.y = 0;
+	input->d.z = 0;
 	return 0;
 }
 
-int set_cam_rotation(vec3d* angle, float anglex, float angley, float anglez) {
-	angle->x = anglex;
-	angle->y = angley;
-	angle->z = anglez;
+int set_cam_rotation(vec3d* angle, float pitch, float yaw) {
+	angle->x = pitch;
+	angle->y = yaw;
+	angle->z = 0;
 	return 0;
 }
 
@@ -295,10 +286,13 @@ vec3d operator*(matx3d a, vec3d b) {
 
 vec3d vec3d_norm_cross(vec3d a, vec3d b){
 	vec3d out;
-	float len = pow(pow(a.x - b.x, 2) + pow(a.y - b.y, 2) + pow(a.z - b.z, 2), 0.5);
-	out.x = (a.y*b.z - a.z*b.y)/ len;
-	out.y = (a.z*b.x - a.x*b.z)/ len;
-	out.z = (a.x*b.y - a.y*b.x)/ len;
-
+	out.x = (a.y*b.z - a.z*b.y);
+	out.y = (a.z*b.x - a.x*b.z);
+	out.z = (a.x*b.y - a.y*b.x);
+	float len = pow(pow(out.x, 2) + pow(out.y, 2) + pow(out.z, 2), 0.5);
+	if (len == 0) return out;
+	out.x /= len;
+	out.y /= len;
+	out.z /= len;
 	return out;
 }

@@ -106,7 +106,7 @@ int draw_tri(SDL_Renderer* renderer, std::vector<float>& buffer_out, tri3d trian
 			depth_map_value = (w * barycentric_depth_weights[0] + v * barycentric_depth_weights[1] + u * barycentric_depth_weights[2]);
 			if (u >= 0 && v >= 0 && u + v < 1) {
 				drawing = true;
-				if (buffer_out[(y + i) * full_x_width + x + q] < (0.0625 + depth_map_value) * depth_test) {
+				if (buffer_out[(y + i) * full_x_width + x + q] * depth_test < (0.0625 + depth_map_value)) {
 					//SDL_SetRenderDrawColor(renderer, w * barycentric_depth_weights[0] * 20, v * barycentric_depth_weights[1] * 20, u * barycentric_depth_weights[2] * 20, 255);
 					//SDL_SetRenderDrawColor(renderer, depth_map_value, depth_map_value, depth_map_value, 255);
 					SDL_RenderDrawPoint(renderer, (x + (int)q), (y + (int)i));
@@ -188,28 +188,6 @@ void object_matrix(matx3d* object_matrix, vec3d object_pos, vec3d object_rot) { 
 	object_matrix->d.q = 1;
 }
 
-void projection_matrix(matx3d* projection_matx, camera camera, int type) {   // Possibly move this inside the camera struct
-	projection_matx->a.x = 1;
-	projection_matx->a.y = 0;
-	projection_matx->a.z = 0;
-	projection_matx->a.q = 0;
-
-	projection_matx->b.x = 0;
-	projection_matx->b.y = 1;
-	projection_matx->b.z = 0;
-	projection_matx->b.q = 0;
-
-	projection_matx->c.x = 0;
-	projection_matx->c.y = 0;
-	projection_matx->c.z = 1;
-	projection_matx->c.q = 0;
-
-	projection_matx->d.x = 0;
-	projection_matx->d.y = 0;
-	projection_matx->d.z = 0;
-	projection_matx->d.q = 1;
-}
-
 int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, std::vector<float>& depth_buffer, int half_screen_x, int half_screen_y, light light) {
 	if (!object.tags.show_object) return 0; // Object is hidden
 	
@@ -219,13 +197,11 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 	// Make matrices
 	matx3d cam_world = camera.matrix;
 	matx3d obj_world;
-	matx3d cam_proj;
 
 	camera_matrix(&cam_world, camera.camera_pos);
 	object_matrix(&obj_world, object.model_org, object.model_rot);
-	projection_matrix(&cam_proj, camera, 0);
 	get_inverse(&cam_world);
-	matx3d cam_obj = (cam_proj * cam_world) * obj_world;
+	matx3d cam_obj = (cam_world) * obj_world;
 
 	tri3d converted_tris[4];
 	short int num_tris = 1;
@@ -677,10 +653,10 @@ int clip_near(tri3d* converted_tri1, tri3d* converted_tri2, float near_depth) { 
 }
 
 int setup_render(camera* camera, SDL_Renderer* renderer) {
-	set_rotation(&camera->matrix, &camera->angles);
+	get_normal_from_cam(camera);
+	set_rotation(&camera->matrix, &camera->camera_vect);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer);
-	get_normal_from_matx(camera);
 	return 0;
 }
 
@@ -708,7 +684,6 @@ int draw_buffer(SDL_Renderer* renderer, std::vector<float>& buffer, int half_scr
 	return 0;
 }
 
-
 int clear_depth_buffer(std::vector<float>& buffer, const int* sizex, const int* sizey) {  // Time this function
 	const __int64 double_sizex = static_cast<__int64>(*sizex) * 2;
 	const __int64 double_sizey = static_cast<__int64>(*sizey) * 2;
@@ -720,8 +695,14 @@ int clear_depth_buffer(std::vector<float>& buffer, const int* sizex, const int* 
 	return 0;
 }
 
-int get_normal_from_matx(camera* camera) {
-	vec3d angle = { camera->angles.x * 3.1415 / 180, camera->angles.y * 3.1415 / 180, camera->angles.y * 3.1415 / 180 };
-	camera->camera_vect = { cos(angle.y)*sin(angle.x), cos(angle.x)*cos(angle.y), sin(angle.y), 1};
-	return 0;	
+int get_normal_from_cam(camera* camera) {
+	vec3d angle = { camera->angles.x * 3.1415 / 180, camera->angles.y * 3.1415 / 180, camera->angles.z * 3.1415 / 180 };
+	camera->camera_vect = { cos(angle.x)*cos(angle.y), cos(angle.x)*sin(angle.y), sin(angle.x), 1};
+	float len = pow(pow(camera->camera_vect.x, 2) + pow(camera->camera_vect.y, 2) + pow(camera->camera_vect.z, 2), 0.5);
+	if (len == 0) return 0;
+	camera->camera_vect.x /= len;
+	camera->camera_vect.y /= len;
+	camera->camera_vect.z /= len;
+
+	return 0;
 }

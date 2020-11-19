@@ -22,7 +22,7 @@ struct frust {
 };
 
 struct camera {
-	vec3d camera_pos = { 0, 0, -1, 1 };
+	vec3d camera_pos = { 0, 0, 1, 1 };
 	vec3d angles = { 0, 0, 0, 1 };
 	matx3d matrix = {
 	{1, 0, 0, 0},
@@ -57,8 +57,6 @@ void camera_matrix(matx3d* cam_matx, vec3d camera_pos);
 
 void object_matrix(matx3d* object_matrix, vec3d object_pos, vec3d object_rot);
 
-void projection_matrix(matx3d* projection_matx, camera camera, int type);
-
 int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, std::vector<float>& depth_buffer, int half_screen_x, int half_screen_y, light light);
 
 int clip_far(tri3d* converted_tri1, tri3d* converted_tri2, float far_depth);
@@ -73,6 +71,6 @@ int setup_render(camera* camera, SDL_Renderer* renderer);
 
 int draw_buffer(SDL_Renderer* renderer, std::vector<float>& buffer, int half_screen_x, int half_screen_y);
 
-int get_normal_from_matx(camera* camera);
+int get_normal_from_cam(camera* camera);
 
 #endif

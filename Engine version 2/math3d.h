@@ -46,7 +46,7 @@ int normalize(vec3d* a);
 
 int set_rotation(matx3d* input, vec3d* angle);
 
-int set_cam_rotation(vec3d* angle, float anglex, float angley, float anglez);
+int set_cam_rotation(vec3d* angle, float anglex, float angley);
 
 int delta_rotate(matx3d* input, vec3d angle, float anglex, float angley, float anglez);
 

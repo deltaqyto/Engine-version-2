@@ -105,11 +105,17 @@ Implemented load from obj, added a second cube
 
 16/11/2020
 Implemented a single color per object
+Is now drawing a dragon
+
+19/11/2020
+Cam normal is working properly
+Objects are rotated 
+Y and Z axis are swapped for some reason
+Added depth test tag
 
 To do for next user:
 Fix bad bfc
-Fix triangle early quit optimisation  -- kinda gay, will need to rework if gpu is used anyway
-
+Calculate barycentrics from clipping
 
 Housekeeping:
 Fix cube mesh to be clockwise and complete
@@ -117,6 +123,7 @@ Make sure barycentrics are recalculated at clipping
 Check if half size screens are actually benificial
 
 Notes:
+At cam pitch yaw 0, 0 -> camera looking at x axis
 
 
 Render procedure:
