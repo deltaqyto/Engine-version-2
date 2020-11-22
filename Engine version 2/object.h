@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include "text.h"
+#include "textures.h"
 
 struct tags {
 	bool noclipping = false;
@@ -15,19 +16,28 @@ struct tags {
 	bool bfc = true;
 	bool debug_color = false;
 	bool show_object = true;
+	bool use_texture = true;
 };
 
 struct object_info {
+	std::vector <float> tverts;
+	std::vector <int> ttris;
 	std::vector <float> verts; // Flattened array for speed
 	std::vector <int> tris; // Flattened array for speed
 	std::vector <vec3d> normals;
-	std::vector <vec3d> colors;
 	std::vector <tri3d> model_mesh; // Derived from verts and tris
+	std::vector <texture*> textures;
+	int current_texture = -1; // -1 = no texture
+	bool has_texture = false;
 	tags tags;
 	vec3d model_org = {0, 0, 0, 1};
 	vec3d model_rot = {0, 0, 0, 1};
-	vec3d color = {255, 255, 0, 255};
+	color color = {255, 255, 0, 255};
 
+	void add_texture(texture* tex) { 
+		textures.push_back(tex); 
+		current_texture += 1; 
+	}
 	void set_zipped() { is_zipped = true; } // Set and get is_zipped
 	bool get_zipped() { return is_zipped; }
 private:

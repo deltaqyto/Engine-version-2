@@ -38,7 +38,7 @@ vec3d matrix_by_vect(matx3d a, vec3d b);
 
 vec3d to_vec(float comp_a, float comp_b, float comp_c, float comp_d);
 
-vec3d vector_clip(float dist, vec3d* lineStart, vec3d* lineEnd);
+vec3d vector_clip(float dist, vec3d* lineStart, vec3d* lineEnd, float* tof);
 
 ray3d seg_to_ray(vec3d a, vec3d b);
 

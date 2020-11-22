@@ -6,7 +6,7 @@ int to_point(SDL_Point* out, vec3d point) {
 	return 0;
 }
 
-int draw_tri(SDL_Renderer* renderer, std::vector<float>& buffer_out, tri3d triangle, int half_x_width, int half_y_width, int depth_test, light light) { // depthmap is a linear array. Buffer out is pointing to the first value
+int draw_tri(std::vector<float>& color_buffer, std::vector<float>& buffer_out, tri3d triangle, int half_x_width, int half_y_width, int depth_test, light light, texture* texture) { // depthmap is a linear array. Buffer out is pointing to the first value
 	tri3d scaled_tri = triangle;
 	scaled_tri.p1.x = scaled_tri.p1.x * half_x_width + half_x_width;
 	scaled_tri.p2.x = scaled_tri.p2.x * half_x_width + half_x_width;
@@ -16,10 +16,10 @@ int draw_tri(SDL_Renderer* renderer, std::vector<float>& buffer_out, tri3d trian
 	scaled_tri.p2.y = scaled_tri.p2.y * half_y_width + half_y_width;
 	scaled_tri.p3.y = scaled_tri.p3.y * half_y_width + half_y_width;
 
-	int x = (int)std::min(std::min(floor(scaled_tri.p1.x), floor(scaled_tri.p2.x)), floor(scaled_tri.p3.x));
-	int y = (int)std::min(std::min(floor(scaled_tri.p1.y), floor(scaled_tri.p2.y)), floor(scaled_tri.p3.y));
-	int wx = (int)std::max(std::max(ceil(scaled_tri.p1.x), ceil(scaled_tri.p2.x)), ceil(scaled_tri.p3.x)) - x;
-	int wy = (int)std::max(std::max(ceil(scaled_tri.p1.y), ceil(scaled_tri.p2.y)), ceil(scaled_tri.p3.y)) - y;
+	int x_offset = (int)std::min(std::min(floor(scaled_tri.p1.x), floor(scaled_tri.p2.x)), floor(scaled_tri.p3.x));
+	int y_offset = (int)std::min(std::min(floor(scaled_tri.p1.y), floor(scaled_tri.p2.y)), floor(scaled_tri.p3.y));
+	int x_width = (int)std::max(std::max(ceil(scaled_tri.p1.x), ceil(scaled_tri.p2.x)), ceil(scaled_tri.p3.x)) - x_offset;
+	int y_width = (int)std::max(std::max(ceil(scaled_tri.p1.y), ceil(scaled_tri.p2.y)), ceil(scaled_tri.p3.y)) - y_offset;
 	vector2d ac;
 	ac.x = scaled_tri.p3.x - scaled_tri.p1.x;
 	ac.y = scaled_tri.p3.y - scaled_tri.p1.y;
@@ -34,40 +34,40 @@ int draw_tri(SDL_Renderer* renderer, std::vector<float>& buffer_out, tri3d trian
 	float invDenom = 1 / (cc * bb - pow(cb, 2));
 	float u;
 	float v;
-	int initx = wx;
-	int inity = wy;
-	int trimx = x;
-	int trimy = y;
+	int initx = x_width;
+	int inity = y_width;
+	int trimx = x_offset;
+	int trimy = y_offset;
 
-	if (x + wx > half_x_width * 2) {
-		wx = half_x_width * 2 - x;
+	if (x_offset + x_width > half_x_width * 2) {
+		x_width = half_x_width * 2 - x_offset;
 	}
-	if (y + wy > half_y_width * 2) {
-		wy = half_y_width * 2 - y;
+	if (y_offset + y_width > half_y_width * 2) {
+		y_width = half_y_width * 2 - y_offset;
 	}
-	if (wx < 0) {
-		wx = 0;
+	if (x_width < 0) {
+		x_width = 0;
 	}
-	if (wy < 0) {
-		wy = 0;
+	if (y_width < 0) {
+		y_width = 0;
 	}
-	if (x < 0) {
+	if (x_offset < 0) {
 		// half_x_width = (int)(half_x_width * 2 + x) / 2;
-		x = 0;
+		x_offset = 0;
 	}
-	if (y < 0) {
+	if (y_offset < 0) {
 		// half_y_width = (int)(half_y_width * 2 + y) / 2;
-		y = 0;
+		y_offset = 0;
 	}
-	if (wx > 640) {
-		wx = 640;
+	if (x_width > 640) {
+		x_width = 640;
 	}
-	if (wy > 480) {
-		wy = 480;
+	if (y_width > 480) {
+		y_width = 480;
 	}
 
-	trimx = x - trimx;
-	trimy = y - trimy;
+	trimx = x_offset - trimx;
+	trimy = y_offset - trimy;
 
 	// Debug print
 	//printf("%g\n", x);
@@ -75,42 +75,70 @@ int draw_tri(SDL_Renderer* renderer, std::vector<float>& buffer_out, tri3d trian
 	//printf("-----------------\n\n");
 	// For each pixel draw color * check value
 
-	float x_dif = x - scaled_tri.p1.x;
-	float y_dif = y - scaled_tri.p1.y;
+	float x_dif = x_offset - scaled_tri.p1.x;
+	float y_dif = y_offset - scaled_tri.p1.y;
 	int full_x_width = half_x_width * 2;
 	int full_y_width = half_y_width * 2;
 	float twoarea = (ab.x * ac.y - ab.y * ac.x);
 	float w = 0;
+	int tex_x;
+	int tex_y;
+	int texture_x;
+	int texture_y;
+	float texture_weights_x[3];
+	float texture_weights_y[3];
+
+	if (texture != nullptr) {
+		tex_x = texture->width;
+		tex_y = texture->height;
+
+		texture_weights_x[0] = (triangle.tx.x / triangle.p1.q) * tex_x;
+		texture_weights_x[1] = (triangle.tx.y / triangle.p2.q) * tex_x;
+		texture_weights_x[2] = (triangle.tx.q / triangle.p3.q) * tex_x;
+
+		texture_weights_y[0] = (triangle.ty.x / triangle.p1.q) * tex_y;
+		texture_weights_y[1] = (triangle.ty.y / triangle.p2.q) * tex_y;
+		texture_weights_y[2] = (triangle.ty.q / triangle.p3.q) * tex_y;
+
+		texture_x = 0;
+		texture_y = 0;
+	}
 	float barycentric_depth_weights[3] = { scaled_tri.p1.z, scaled_tri.p2.z, scaled_tri.p3.z };
-	float depth_map_value = 0;
+	float depth_value = 0;
 
 	bool skip;
 	bool drawing;
+	color color = triangle.cp1;
 
-	for (size_t i = wy; i != 0; i--) {
+	for (size_t current_y = 0; current_y < y_width; current_y++) {
 		skip = false;
 		drawing = false;
-		for (size_t q = wx; q != 0; q--) {
+		for (size_t current_x = 0; current_x < x_width; current_x++) {
 			if (skip) {
 				break;
 			}
 			vector2d ap;
-			ap.x = q + x_dif;
-			ap.y = i + y_dif;
+			ap.x = current_x + x_dif;
+			ap.y = current_y + y_dif;
 			cp = vect_dot_vect(ac, ap);
 			bp = vect_dot_vect(ab, ap);
 			u = (bb * cp - cb * bp) * invDenom;
 			v = (cc * bp - cb * cp) * invDenom;
 			// b1 = u, b2 = v
 			w = abs(1 - u - v);
-			depth_map_value = (w * barycentric_depth_weights[0] + v * barycentric_depth_weights[1] + u * barycentric_depth_weights[2]);
+			depth_value = (w * barycentric_depth_weights[0] + v * barycentric_depth_weights[1] + u * barycentric_depth_weights[2]);
 			if (u >= 0 && v >= 0 && u + v < 1) {
-				drawing = true;
-				if (buffer_out[(y + i) * full_x_width + x + q] * depth_test < (0.0625 + depth_map_value)) {
-					//SDL_SetRenderDrawColor(renderer, w * barycentric_depth_weights[0] * 20, v * barycentric_depth_weights[1] * 20, u * barycentric_depth_weights[2] * 20, 255);
-					//SDL_SetRenderDrawColor(renderer, depth_map_value, depth_map_value, depth_map_value, 255);
-					SDL_RenderDrawPoint(renderer, (x + (int)q), (y + (int)i));
-					buffer_out[(y + i) * full_x_width + x + q] = depth_map_value;
+				drawing = true;	   //https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/perspective-correct-interpolation-vertex-attributes
+				if (buffer_out[(y_offset + current_y) * full_x_width + (x_offset + current_x)] * depth_test < (0.0625 + depth_value)) {
+					if (texture != nullptr) {
+						texture_x = std::min(int((w * texture_weights_x[0] + v * texture_weights_x[1] + u * texture_weights_x[2]) / depth_value), tex_x - 1);
+						texture_y = std::min(int((w * texture_weights_y[0] + v * texture_weights_y[1] + u * texture_weights_y[2]) / depth_value), tex_y - 1);
+						color = texture->get_pixel(texture_x, texture_y);
+					}
+					color_buffer[3 * ((y_offset + current_y) * full_x_width + (x_offset + current_x))] = color.r;
+					color_buffer[3 * ((y_offset + current_y) * full_x_width + (x_offset + current_x)) + 1] = color.g;
+					color_buffer[3 * ((y_offset + current_y) * full_x_width + (x_offset + current_x)) + 2] = color.b;
+					buffer_out[(y_offset + current_y) * full_x_width + (x_offset + current_x)] = depth_value;
 
 				}
 			}
@@ -188,7 +216,7 @@ void object_matrix(matx3d* object_matrix, vec3d object_pos, vec3d object_rot) { 
 	object_matrix->d.q = 1;
 }
 
-int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, std::vector<float>& depth_buffer, int half_screen_x, int half_screen_y, light light) {
+int full_convert_obj(std::vector<float>& color_buffer, object_info object, camera camera, std::vector<float>& depth_buffer, int half_screen_x, int half_screen_y, light light) {
 	if (!object.tags.show_object) return 0; // Object is hidden
 	
 											// Check validity
@@ -208,9 +236,10 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 	short int num_tris2 = 1;
 	vec3d depth;
 	vec3d converted;
-	vec3d color;
+	color color;
 	float htan_angle = tan(camera.frustrum.horfov / 2);
 	float vtan_angle = tan(camera.frustrum.verfov / 2);
+	texture* bound_texture = nullptr;
 
 	// foreach
 	for (size_t i = object.model_mesh.size() - 1; i != -1; i--)
@@ -219,6 +248,8 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 		converted_tris[0].p1 = cam_obj * object.model_mesh[i].p1;
 		converted_tris[0].p2 = cam_obj * object.model_mesh[i].p2;
 		converted_tris[0].p3 = cam_obj * object.model_mesh[i].p3;
+		converted_tris[0].tx = object.model_mesh[i].tx;
+		converted_tris[0].ty = object.model_mesh[i].ty;
 
 		get_normal_from_tri(&converted_tris[0]); // Perform back face culling
 		if (object.tags.bfc && vec3d_dot(converted_tris->normal, 
@@ -246,18 +277,23 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 				num_tris = clip_near(&converted_tris[0], &converted_tris[1], camera.frustrum.near);
 			}
 		}
-		// Set color with basic flat shading
-		float brightness = 1;
-		if (!object.tags.fullbright) {
-			brightness = std::min(light.ambient + std::max(vec3d_dot(converted_tris[0].normal, light.direction), 0.0f), 1.0f);
-		}
-		if (object.tags.debug_color) {
-			color = { 255 * float(i) / object.tris.size(), 255 -255* float(i) / object.tris.size(),float(i) / (2*object.tris.size()), 255 };
+		if (!object.has_texture || !object.tags.use_texture) {
+			// Set color with basic flat shading
+			float brightness = 1;
+			if (!object.tags.fullbright) {
+				brightness = std::min(light.ambient + std::max(vec3d_dot(converted_tris[0].normal, light.direction), 0.0f), 1.0f);
+			}
+			if (object.tags.debug_color) {
+				color = { int(255 * float(i) / object.tris.size()), int(255 - 255 * float(i) / object.tris.size()),int(float(i) / (2 * object.tris.size())), 255 };
+			}
+			else {
+				color = object.color;
+			}
+			
+			converted_tris[0].cp1 = { int(color.r * brightness), int(color.g * brightness),int(color.b * brightness), 255 };
 		} else {
-			color = object.color;
+			bound_texture = object.textures[object.current_texture];
 		}
-		SDL_SetRenderDrawColor(renderer, (Uint8)color.x * brightness, (Uint8)color.y * brightness, (Uint8)color.z * brightness, (Uint8)color.q);
-
 		// Draw to screen
 		switch (num_tris) { //Support for 2 cutting planes, giving 4 tris, abusing switch case as a goto function
 		case 4:
@@ -268,28 +304,28 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 			converted.x = converted.x / (htan_angle * converted.z);
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[3].p1 = converted;
 
 			converted = converted_tris[3].p2;
 			converted.x = converted.x / (htan_angle * converted.z);
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[3].p2 = converted;
 
 			converted = converted_tris[3].p3;
 			converted.x = converted.x / (htan_angle * converted.z); // add in resolution term
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[3].p3 = converted;
 
 			converted_tris[3].p1.z = 1 / converted_tris[3].p1.z;
 			converted_tris[3].p2.z = 1 / converted_tris[3].p2.z;
 			converted_tris[3].p3.z = 1 / converted_tris[3].p3.z;
 
-			draw_tri(renderer, depth_buffer, converted_tris[3], half_screen_x, half_screen_y, (int)object.tags.depth_test, light);
+			draw_tri(color_buffer, depth_buffer, converted_tris[3], half_screen_x, half_screen_y, (int)object.tags.depth_test, light, bound_texture);
 		case 3:
 			//SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);
 
@@ -298,28 +334,28 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 			converted.x = converted.x / (htan_angle * converted.z);
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[2].p1 = converted;
 
 			converted = converted_tris[2].p2;
 			converted.x = converted.x / (htan_angle * converted.z);
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[2].p2 = converted;
 
 			converted = converted_tris[2].p3;
 			converted.x = converted.x / (htan_angle * converted.z); // add in resolution term
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[2].p3 = converted;
 
 			converted_tris[2].p1.z = 1 / converted_tris[2].p1.z;
 			converted_tris[2].p2.z = 1 / converted_tris[2].p2.z;
 			converted_tris[2].p3.z = 1 / converted_tris[2].p3.z;
 
-			draw_tri(renderer, depth_buffer, converted_tris[2], half_screen_x, half_screen_y, (int)object.tags.depth_test, light);
+			draw_tri(color_buffer, depth_buffer, converted_tris[2], half_screen_x, half_screen_y, (int)object.tags.depth_test, light, bound_texture);
 		case 2:
 			//SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
@@ -328,28 +364,28 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 			converted.x = converted.x / (htan_angle * converted.z);
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[1].p1 = converted;
 
 			converted = converted_tris[1].p2;
 			converted.x = converted.x / (htan_angle * converted.z);
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[1].p2 = converted;
 
 			converted = converted_tris[1].p3;
 			converted.x = converted.x / (htan_angle * converted.z); // add in resolution term
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[1].p3 = converted;
 
 			converted_tris[1].p1.z = 1 / converted_tris[1].p1.z;
 			converted_tris[1].p2.z = 1 / converted_tris[1].p2.z;
 			converted_tris[1].p3.z = 1 / converted_tris[1].p3.z;
 
-			draw_tri(renderer, depth_buffer, converted_tris[1], half_screen_x, half_screen_y, (int)object.tags.depth_test, light);
+			draw_tri(color_buffer, depth_buffer, converted_tris[1], half_screen_x, half_screen_y, (int)object.tags.depth_test, light, bound_texture);
 		case 1:
 			//SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
 
@@ -358,28 +394,28 @@ int full_convert_obj(SDL_Renderer* renderer, object_info object, camera camera, 
 			converted.x = converted.x / (htan_angle * converted.z);
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[0].p1 = converted;
 
 			converted = converted_tris[0].p2;
 			converted.x = converted.x / (htan_angle * converted.z);
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[0].p2 = converted;
 
 			converted = converted_tris[0].p3;
 			converted.x = converted.x / (htan_angle * converted.z); // add in resolution term
 			converted.y = converted.y / (vtan_angle * converted.z);
 			converted.z /= camera.frustrum.far;
-			converted.q = 1;
+			converted.q = converted.z;
 			converted_tris[0].p3 = converted;
 
 			converted_tris[0].p1.z = 1 / converted_tris[0].p1.z;
 			converted_tris[0].p2.z = 1 / converted_tris[0].p2.z;
 			converted_tris[0].p3.z = 1 / converted_tris[0].p3.z;
  
-			draw_tri(renderer, depth_buffer, converted_tris[0], half_screen_x, half_screen_y, (int)object.tags.depth_test, light);
+			draw_tri(color_buffer, depth_buffer, converted_tris[0], half_screen_x, half_screen_y, (int)object.tags.depth_test, light, bound_texture);
 		default:																										 
 			break;
 		}
@@ -399,9 +435,11 @@ clip_tags::OutCode get_far(vec3d input, float limit) {
 	return clip_tags::INSIDE;
 }
 
-int clip_far(tri3d* converted_tri1, tri3d* converted_tri2, float far_depth) {  // Return num of active tris
-// Converted tri 1 holds input
+int clip_far(tri3d* converted_tri1, tri3d* converted_tri2, float far_depth) {  
+	// Return num of active tris
+	// Converted tri 1 holds input
 	tri3d tmptri;
+	float tof;
 
 	tmptri.p1.x = converted_tri1->p1.x;
 	tmptri.p1.y = converted_tri1->p1.y;
@@ -433,90 +471,87 @@ int clip_far(tri3d* converted_tri1, tri3d* converted_tri2, float far_depth) {  /
 	case 32:
 		split_tri = 2;
 		if (outcode1 & clip_tags::FAR) {
-			converted_tri2->p1 = vector_clip(far_depth, &tmptri.p3, &tmptri.p1);
-			converted_tri2->p2 = vector_clip(far_depth, &tmptri.p2, &tmptri.p1);
+			converted_tri2->p1 = vector_clip(far_depth, &tmptri.p3, &tmptri.p1, &tof);
+			converted_tri2->tx.x = converted_tri1->tx.q + (converted_tri1->tx.x - converted_tri1->tx.q) * tof;
+			converted_tri2->ty.x = converted_tri1->ty.q + (converted_tri1->ty.x - converted_tri1->ty.q) * tof;
+			converted_tri2->p2 = vector_clip(far_depth, &tmptri.p2, &tmptri.p1, &tof);
+			converted_tri2->tx.y = converted_tri1->tx.y + (converted_tri1->tx.x - converted_tri1->tx.y) * tof;
+			converted_tri2->ty.y = converted_tri1->ty.y + (converted_tri1->ty.x - converted_tri1->ty.y) * tof;
 			converted_tri2->p3.x = tmptri.p3.x;
 			converted_tri2->p3.y = tmptri.p3.y;
 			converted_tri2->p3.z = tmptri.p3.z;
+			converted_tri2->tx.q = converted_tri1->tx.q;
+			converted_tri2->ty.q = converted_tri1->ty.q;
 
 			converted_tri1->p1.x = converted_tri2->p2.x;
 			converted_tri1->p1.y = converted_tri2->p2.y;
 			converted_tri1->p1.z = converted_tri2->p2.z;
-
-			converted_tri1->p2.x = tmptri.p2.x;
-			converted_tri1->p2.y = tmptri.p2.y;
-			converted_tri1->p2.z = tmptri.p2.z;
-
-			converted_tri1->p3.x = tmptri.p3.x;
-			converted_tri1->p3.y = tmptri.p3.y;
-			converted_tri1->p3.z = tmptri.p3.z;
+			converted_tri1->tx.x = converted_tri2->tx.y;
+			converted_tri1->ty.x = converted_tri2->ty.y;
 		}
 		else if (outcode2 & clip_tags::FAR) {
-			converted_tri2->p1 = vector_clip(far_depth, &tmptri.p1, &tmptri.p2);
-			converted_tri2->p2 = vector_clip(far_depth, &tmptri.p3, &tmptri.p2);
+			converted_tri2->p1 = vector_clip(far_depth, &tmptri.p1, &tmptri.p2, &tof);
+			converted_tri2->tx.x = converted_tri1->tx.x + (converted_tri1->tx.y - converted_tri1->tx.x) * tof;
+			converted_tri2->ty.x = converted_tri1->ty.x + (converted_tri1->ty.y - converted_tri1->ty.x) * tof;
+			converted_tri2->p2 = vector_clip(far_depth, &tmptri.p3, &tmptri.p2, &tof);
+			converted_tri2->tx.y = converted_tri1->tx.q + (converted_tri1->tx.y - converted_tri1->tx.q) * tof;
+			converted_tri2->ty.y = converted_tri1->ty.q + (converted_tri1->ty.y - converted_tri1->ty.q) * tof;
 			converted_tri2->p3.x = tmptri.p3.x;
 			converted_tri2->p3.y = tmptri.p3.y;
 			converted_tri2->p3.z = tmptri.p3.z;
-
-			converted_tri1->p1.x = tmptri.p1.x;
-			converted_tri1->p1.y = tmptri.p1.y;
-			converted_tri1->p1.z = tmptri.p1.z;
+			converted_tri2->tx.q = converted_tri1->tx.q;
+			converted_tri2->ty.q = converted_tri1->ty.q;
 
 			converted_tri1->p2.x = converted_tri2->p1.x;
 			converted_tri1->p2.y = converted_tri2->p1.y;
 			converted_tri1->p2.z = converted_tri2->p1.z;
-
-			converted_tri1->p3.x = tmptri.p3.x;
-			converted_tri1->p3.y = tmptri.p3.y;
-			converted_tri1->p3.z = tmptri.p3.z;
+			converted_tri1->tx.y = converted_tri2->tx.x;
+			converted_tri1->ty.y = converted_tri2->ty.x;
 		}
 		else {
-			converted_tri2->p2 = vector_clip(far_depth, &tmptri.p2, &tmptri.p3);
-			converted_tri2->p3 = vector_clip(far_depth, &tmptri.p1, &tmptri.p3);
+			converted_tri2->p2 = vector_clip(far_depth, &tmptri.p2, &tmptri.p3, &tof);
+			converted_tri2->tx.y = converted_tri1->tx.y + (converted_tri1->tx.q - converted_tri1->tx.y) * tof;
+			converted_tri2->ty.y = converted_tri1->ty.y + (converted_tri1->ty.q - converted_tri1->ty.y) * tof;
+			converted_tri2->p3 = vector_clip(far_depth, &tmptri.p1, &tmptri.p3, &tof);
+			converted_tri2->tx.q = converted_tri1->tx.x + (converted_tri1->tx.q - converted_tri1->tx.x) * tof;
+			converted_tri2->ty.q = converted_tri1->ty.x + (converted_tri1->ty.q - converted_tri1->ty.x) * tof;
 			converted_tri2->p1.x = tmptri.p1.x;
 			converted_tri2->p1.y = tmptri.p1.y;
 			converted_tri2->p1.z = tmptri.p1.z;
-
-			converted_tri1->p1.x = tmptri.p1.x;
-			converted_tri1->p1.y = tmptri.p1.y;
-			converted_tri1->p1.z = tmptri.p1.z;
-
-			converted_tri1->p2.x = tmptri.p2.x;
-			converted_tri1->p2.y = tmptri.p2.y;
-			converted_tri1->p2.z = tmptri.p2.z;
+			converted_tri2->tx.x = converted_tri1->tx.x;
+			converted_tri2->ty.x = converted_tri1->ty.x;
 
 			converted_tri1->p3.x = converted_tri2->p2.x;
 			converted_tri1->p3.y = converted_tri2->p2.y;
 			converted_tri1->p3.z = converted_tri2->p2.z;
-
+			converted_tri1->tx.q = converted_tri2->tx.y;
+			converted_tri1->ty.q = converted_tri2->ty.y;
 		}
 		break;
 	case 64:
 		if (outcode1 & clip_tags::FAR && outcode2 & clip_tags::FAR) {
-			converted_tri1->p1 = vector_clip(far_depth, &tmptri.p3, &tmptri.p1);
-			converted_tri1->p2 = vector_clip(far_depth, &tmptri.p3, &tmptri.p2);
-
-			converted_tri1->p3.x = tmptri.p3.x;
-			converted_tri1->p3.y = tmptri.p3.y;
-			converted_tri1->p3.z = tmptri.p3.z;
+			converted_tri1->p1 = vector_clip(far_depth, &tmptri.p3, &tmptri.p1, &tof);
+			converted_tri1->tx.x = converted_tri1->tx.q + (converted_tri1->tx.x - converted_tri1->tx.q) * tof;
+			converted_tri1->ty.x = converted_tri1->ty.q + (converted_tri1->ty.x - converted_tri1->ty.q) * tof;
+			converted_tri1->p2 = vector_clip(far_depth, &tmptri.p3, &tmptri.p2, &tof);
+			converted_tri1->tx.y = converted_tri1->tx.q + (converted_tri1->tx.y - converted_tri1->tx.q) * tof;
+			converted_tri1->ty.y = converted_tri1->ty.q + (converted_tri1->ty.y - converted_tri1->ty.q) * tof;
 		}
 		else if (outcode1 & clip_tags::FAR && outcode3 & clip_tags::FAR) {
-			converted_tri1->p1 = vector_clip(far_depth, &tmptri.p2, &tmptri.p1);
-
-			converted_tri1->p2.x = tmptri.p2.x;
-			converted_tri1->p2.y = tmptri.p2.y;
-			converted_tri1->p2.z = tmptri.p2.z;
-
-			converted_tri1->p3 = vector_clip(far_depth, &tmptri.p2, &tmptri.p3);
+			converted_tri1->p1 = vector_clip(far_depth, &tmptri.p2, &tmptri.p1, &tof);
+			converted_tri1->tx.x = converted_tri1->tx.y + (converted_tri1->tx.x - converted_tri1->tx.y) * tof;
+			converted_tri1->ty.x = converted_tri1->ty.y + (converted_tri1->ty.x - converted_tri1->ty.y) * tof;
+			converted_tri1->p3 = vector_clip(far_depth, &tmptri.p2, &tmptri.p3, &tof);
+			converted_tri1->tx.q = converted_tri1->tx.y + (converted_tri1->tx.q - converted_tri1->tx.y) * tof;
+			converted_tri1->ty.q = converted_tri1->ty.y + (converted_tri1->ty.q - converted_tri1->ty.y) * tof;
 		}
 		else {
-			converted_tri1->p1.x = tmptri.p1.x;
-			converted_tri1->p1.y = tmptri.p1.y;
-			converted_tri1->p1.z = tmptri.p1.z;
-
-			converted_tri1->p2 = vector_clip(far_depth, &tmptri.p1, &tmptri.p2);
-			converted_tri1->p3 = vector_clip(far_depth, &tmptri.p1, &tmptri.p3);
-
+			converted_tri1->p2 = vector_clip(far_depth, &tmptri.p1, &tmptri.p2, &tof);
+			converted_tri1->tx.y = converted_tri1->tx.x + (converted_tri1->tx.y - converted_tri1->tx.x) * tof;
+			converted_tri1->ty.y = converted_tri1->ty.x + (converted_tri1->ty.y - converted_tri1->ty.x) * tof;
+			converted_tri1->p3 = vector_clip(far_depth, &tmptri.p1, &tmptri.p3, &tof);
+			converted_tri1->tx.q = converted_tri1->tx.x + (converted_tri1->tx.q - converted_tri1->tx.x) * tof;
+			converted_tri1->ty.q = converted_tri1->ty.x + (converted_tri1->ty.q - converted_tri1->ty.x) * tof;
 		}
 		break;
 
@@ -527,9 +562,11 @@ int clip_far(tri3d* converted_tri1, tri3d* converted_tri2, float far_depth) {  /
 	return split_tri;
 }
 
-int clip_near(tri3d* converted_tri1, tri3d* converted_tri2, float near_depth) {  // Return num of active tris
-// Converted tri 1 holds input
+int clip_near(tri3d* converted_tri1, tri3d* converted_tri2, float near_depth) { 
+	// Return num of active tris
+	// Converted tri 1 holds input
 	tri3d tmptri;
+	float tof;
 
 	tmptri.p1.x = converted_tri1->p1.x;
 	tmptri.p1.y = converted_tri1->p1.y;
@@ -559,89 +596,90 @@ int clip_near(tri3d* converted_tri1, tri3d* converted_tri2, float near_depth) { 
 	case 16:
 		split_tri = 2;
 		if (outcode1 & clip_tags::NEAR) {
-			converted_tri2->p1 = vector_clip(near_depth, &tmptri.p3, &tmptri.p1);
-			converted_tri2->p2 = vector_clip(near_depth, &tmptri.p2, &tmptri.p1);
+			converted_tri2->p1 = vector_clip(near_depth, &tmptri.p3, &tmptri.p1, &tof);
+			converted_tri2->tx.x = converted_tri1->tx.q + (converted_tri1->tx.x - converted_tri1->tx.q) * tof;
+			converted_tri2->ty.x = converted_tri1->ty.q + (converted_tri1->ty.x - converted_tri1->ty.q) * tof;
+			converted_tri2->p2 = vector_clip(near_depth, &tmptri.p2, &tmptri.p1, &tof);
+			converted_tri2->tx.y = converted_tri1->tx.y + (converted_tri1->tx.x - converted_tri1->tx.y) * tof;
+			converted_tri2->ty.y = converted_tri1->ty.y + (converted_tri1->ty.x - converted_tri1->ty.y) * tof;
+			
 			converted_tri2->p3.x = tmptri.p3.x;
 			converted_tri2->p3.y = tmptri.p3.y;
 			converted_tri2->p3.z = tmptri.p3.z;
+			converted_tri2->tx.q = converted_tri1->tx.q;
+			converted_tri2->ty.q = converted_tri1->ty.q; 
 
 			converted_tri1->p1.x = converted_tri2->p2.x;
 			converted_tri1->p1.y = converted_tri2->p2.y;
 			converted_tri1->p1.z = converted_tri2->p2.z;
-
-			converted_tri1->p2.x = tmptri.p2.x;
-			converted_tri1->p2.y = tmptri.p2.y;
-			converted_tri1->p2.z = tmptri.p2.z;
-
-			converted_tri1->p3.x = tmptri.p3.x;
-			converted_tri1->p3.y = tmptri.p3.y;
-			converted_tri1->p3.z = tmptri.p3.z;
-		}
+			converted_tri1->tx.x = converted_tri2->tx.y;
+			converted_tri1->ty.x = converted_tri2->ty.y;
+		} 
 		else if (outcode2 & clip_tags::NEAR) {
-			converted_tri2->p1 = vector_clip(near_depth, &tmptri.p1, &tmptri.p2);
-			converted_tri2->p2 = vector_clip(near_depth, &tmptri.p3, &tmptri.p2);
+			converted_tri2->p1 = vector_clip(near_depth, &tmptri.p1, &tmptri.p2, &tof);
+			converted_tri2->tx.x = converted_tri1->tx.x + (converted_tri1->tx.y - converted_tri1->tx.x) * tof;
+			converted_tri2->ty.x = converted_tri1->ty.x + (converted_tri1->ty.y - converted_tri1->ty.x) * tof;
+			converted_tri2->p2 = vector_clip(near_depth, &tmptri.p3, &tmptri.p2, &tof);
+			converted_tri2->tx.y = converted_tri1->tx.q + (converted_tri1->tx.y - converted_tri1->tx.q) * tof;
+			converted_tri2->ty.y = converted_tri1->ty.q + (converted_tri1->ty.y - converted_tri1->ty.q) * tof;
+			
 			converted_tri2->p3.x = tmptri.p3.x;
 			converted_tri2->p3.y = tmptri.p3.y;
 			converted_tri2->p3.z = tmptri.p3.z;
-
-			converted_tri1->p1.x = tmptri.p1.x;
-			converted_tri1->p1.y = tmptri.p1.y;
-			converted_tri1->p1.z = tmptri.p1.z;
+			converted_tri2->tx.q = converted_tri1->tx.q;
+			converted_tri2->ty.q = converted_tri1->ty.q;
 
 			converted_tri1->p2.x = converted_tri2->p1.x;
 			converted_tri1->p2.y = converted_tri2->p1.y;
 			converted_tri1->p2.z = converted_tri2->p1.z;
-
-			converted_tri1->p3.x = tmptri.p3.x;
-			converted_tri1->p3.y = tmptri.p3.y;
-			converted_tri1->p3.z = tmptri.p3.z;
-		}
+			converted_tri1->tx.y = converted_tri2->tx.x;
+			converted_tri1->ty.y = converted_tri2->ty.x;
+		} 
 		else {
-			converted_tri2->p2 = vector_clip(near_depth, &tmptri.p2, &tmptri.p3);
-			converted_tri2->p3 = vector_clip(near_depth, &tmptri.p1, &tmptri.p3);
+			converted_tri2->p2 = vector_clip(near_depth, &tmptri.p2, &tmptri.p3, &tof);
+			converted_tri2->tx.y = converted_tri1->tx.y + (converted_tri1->tx.q - converted_tri1->tx.y) * tof;
+			converted_tri2->ty.y = converted_tri1->ty.y + (converted_tri1->ty.q - converted_tri1->ty.y) * tof;
+			converted_tri2->p3 = vector_clip(near_depth, &tmptri.p1, &tmptri.p3, &tof);
+			converted_tri2->tx.q = converted_tri1->tx.x + (converted_tri1->tx.q - converted_tri1->tx.x) * tof;
+			converted_tri2->ty.q = converted_tri1->ty.x + (converted_tri1->ty.q - converted_tri1->ty.x) * tof;
+
 			converted_tri2->p1.x = tmptri.p1.x;
 			converted_tri2->p1.y = tmptri.p1.y;
 			converted_tri2->p1.z = tmptri.p1.z;
-
-			converted_tri1->p1.x = tmptri.p1.x;
-			converted_tri1->p1.y = tmptri.p1.y;
-			converted_tri1->p1.z = tmptri.p1.z;
-
-			converted_tri1->p2.x = tmptri.p2.x;
-			converted_tri1->p2.y = tmptri.p2.y;
-			converted_tri1->p2.z = tmptri.p2.z;
+			converted_tri2->tx.x = converted_tri1->tx.x;
+			converted_tri2->ty.x = converted_tri1->ty.x;
 
 			converted_tri1->p3.x = converted_tri2->p2.x;
 			converted_tri1->p3.y = converted_tri2->p2.y;
 			converted_tri1->p3.z = converted_tri2->p2.z;
-
+			converted_tri1->tx.q = converted_tri2->tx.y;
+			converted_tri1->ty.q = converted_tri2->ty.y;
 		}
 		break;
 	case 32:
 		if (outcode1 & clip_tags::NEAR && outcode2 & clip_tags::NEAR) {
-			converted_tri1->p1 = vector_clip(near_depth, &tmptri.p3, &tmptri.p1);
-			converted_tri1->p2 = vector_clip(near_depth, &tmptri.p3, &tmptri.p2);
-
-			converted_tri1->p3.x = tmptri.p3.x;
-			converted_tri1->p3.y = tmptri.p3.y;
-			converted_tri1->p3.z = tmptri.p3.z;
-		}
+			converted_tri1->p1 = vector_clip(near_depth, &tmptri.p3, &tmptri.p1, &tof);
+			converted_tri1->tx.x = converted_tri1->tx.q + (converted_tri1->tx.x - converted_tri1->tx.q) * tof;
+			converted_tri1->ty.x = converted_tri1->ty.q + (converted_tri1->ty.x - converted_tri1->ty.q) * tof;
+			converted_tri1->p2 = vector_clip(near_depth, &tmptri.p3, &tmptri.p2, &tof);
+			converted_tri1->tx.y = converted_tri1->tx.q + (converted_tri1->tx.y - converted_tri1->tx.q) * tof;
+			converted_tri1->ty.y = converted_tri1->ty.q + (converted_tri1->ty.y - converted_tri1->ty.q) * tof;
+		} 
 		else if (outcode1 & clip_tags::NEAR && outcode3 & clip_tags::NEAR) {
-			converted_tri1->p1 = vector_clip(near_depth, &tmptri.p2, &tmptri.p1);
-
-			converted_tri1->p2.x = tmptri.p2.x;
-			converted_tri1->p2.y = tmptri.p2.y;
-			converted_tri1->p2.z = tmptri.p2.z;
-
-			converted_tri1->p3 = vector_clip(near_depth, &tmptri.p2, &tmptri.p3);
-		}
+			converted_tri1->p1 = vector_clip(near_depth, &tmptri.p2, &tmptri.p1, &tof);
+			converted_tri1->tx.x = converted_tri1->tx.y + (converted_tri1->tx.x - converted_tri1->tx.y) * tof;
+			converted_tri1->ty.x = converted_tri1->ty.y + (converted_tri1->ty.x - converted_tri1->ty.y) * tof;
+			converted_tri1->p3 = vector_clip(near_depth, &tmptri.p2, &tmptri.p3, &tof);
+			converted_tri1->tx.q = converted_tri1->tx.y + (converted_tri1->tx.q - converted_tri1->tx.y) * tof;
+			converted_tri1->ty.q = converted_tri1->ty.y + (converted_tri1->ty.q - converted_tri1->ty.y) * tof;
+		} 
 		else {
-			converted_tri1->p1.x = tmptri.p1.x;
-			converted_tri1->p1.y = tmptri.p1.y;
-			converted_tri1->p1.z = tmptri.p1.z;
-
-			converted_tri1->p2 = vector_clip(near_depth, &tmptri.p1, &tmptri.p2);
-			converted_tri1->p3 = vector_clip(near_depth, &tmptri.p1, &tmptri.p3);
+			converted_tri1->p2 = vector_clip(near_depth, &tmptri.p1, &tmptri.p2, &tof);
+			converted_tri1->tx.y = converted_tri1->tx.x + (converted_tri1->tx.y - converted_tri1->tx.x) * tof;
+			converted_tri1->ty.y = converted_tri1->ty.x + (converted_tri1->ty.y - converted_tri1->ty.x) * tof;
+			converted_tri1->p3 = vector_clip(near_depth, &tmptri.p1, &tmptri.p3, &tof);
+			converted_tri1->tx.q = converted_tri1->tx.x + (converted_tri1->tx.q - converted_tri1->tx.x) * tof;
+			converted_tri1->ty.q = converted_tri1->ty.x + (converted_tri1->ty.q - converted_tri1->ty.x) * tof;
 		}
 		break;
 
@@ -670,27 +708,45 @@ SDL_Window* win_make_window(int display_width, int display_height, SDL_WindowFla
 	return window;
 }
 
-int draw_buffer(SDL_Renderer* renderer, std::vector<float>& buffer, int half_screen_x, int half_screen_y) {
-	int depth_map_value;
+int draw_buffer(SDL_Renderer* renderer, std::vector<float>& buffer, int half_screen_x, int half_screen_y, int mode) {
 	int screen_y = 2 * half_screen_y;
 	int screen_x = 2 * half_screen_x;
-	for (size_t i = 0; i < screen_y; i++) {
-		for (size_t q = 0; q < screen_x; q++) {
-			depth_map_value = buffer.at(screen_x * i + q) * 100;
-			SDL_SetRenderDrawColor(renderer, depth_map_value, depth_map_value, depth_map_value, 255);
+	switch (mode) {
+	case 0:
+		int depth_map_value;
+		for (size_t i = 0; i < screen_y; i++) {
+			for (size_t q = 0; q < screen_x; q++) {
+				depth_map_value = buffer.at(screen_x * i + q) * 100;
+				SDL_SetRenderDrawColor(renderer, depth_map_value, depth_map_value, depth_map_value, 255);
+				SDL_RenderDrawPoint(renderer, (int)q, (int)i);
+			}
+		}
+	case 1:
+		for (size_t y_pos = 0; y_pos < screen_y; y_pos++) {
+			for (size_t x_pos = 0; x_pos < screen_x; x_pos++) {
+				SDL_SetRenderDrawColor(renderer, buffer.at((screen_x * y_pos + x_pos) * 3), buffer.at((screen_x * y_pos + x_pos) * 3 + 1), buffer.at((screen_x * y_pos + x_pos) * 3 + 2), 255);
+				SDL_RenderDrawPoint(renderer, (int)x_pos, (int)y_pos);
+			}
+		}
+	}
+	return 0;
+}
+
+int draw_texture(SDL_Renderer* renderer, texture texture) {
+	color color;
+	for (size_t i = 0; i < texture.height; i++) {
+		for (size_t q = 0; q < texture.width; q++) {
+			color = texture.get_pixel(q, i);
+			SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
 			SDL_RenderDrawPoint(renderer, (int)q, (int)i);
 		}
 	}
 	return 0;
 }
 
-int clear_depth_buffer(std::vector<float>& buffer, const int* sizex, const int* sizey) {  // Time this function
-	const __int64 double_sizex = static_cast<__int64>(*sizex) * 2;
-	const __int64 double_sizey = static_cast<__int64>(*sizey) * 2;
-	for (size_t i = double_sizey - 1; i != 0; i--) {
-		for (size_t q = double_sizex - 1; q != 0; q--) {
-			buffer[i * (double_sizex - 1) + q - 1] = 0.0f;
-		}
+int clear_buffer(std::vector<float>& buffer) {  
+	for (size_t i = buffer.size() - 1; i != 0; i--) {
+		buffer[i] = 0.0f;
 	}
 	return 0;
 }

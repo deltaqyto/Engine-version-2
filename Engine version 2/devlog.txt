@@ -1,136 +1,153 @@
 8/10/2020
-Started new project. Discontinued old model due to incoherent design standards
+	Started new project. Discontinued old model due to incoherent design standards
 
 11/10/2020
-Finished basic maths libraries for 2d and 3d surfaces. Will be expanded to process matrices
+	Finished basic maths libraries for 2d and 3d surfaces. Will be expanded to process matrices
 
 12/10/2020
-Render pipeline:
-Tris in obj coords
-convert to world coord
-convert to cam coord
-clip near and far
--- clip sides?
-project to 2d
-clip sides?
-draw tris to screen
+	Render pipeline:
+	Tris in obj coords
+	convert to world coord
+	convert to cam coord
+	clip near and far
+	-- clip sides?
+	project to 2d
+	clip sides?
+	draw tris to screen
 
 22/10/2020
-Clip algorithm in progress
-Render pipline formed
-Tris overclipped
+	Clip algorithm in progress
+	Render pipline formed
+	Tris overclipped
 
 23/10/2020
-Fixed overclipping
-Loaded sliced cube model for depth buffer testing
-Created depth buffer set and reset functions - to be timed
-calculated barycentric coords
+	Fixed overclipping
+	Loaded sliced cube model for depth buffer testing
+	Created depth buffer set and reset functions - to be timed
+	calculated barycentric coords
 
 24/10/2020
-Solved depth mapping issues
-Can reliably render cube
-Mapped q,e to rotation
-Began work on object class
-Operator mapped vector and matrix maths
+	Solved depth mapping issues
+	Can reliably render cube
+	Mapped q,e to rotation
+	Began work on object class
+	Operator mapped vector and matrix maths
 
 25/10/2020
-Fixed operator mapping
-Rendering in a glitchy ortho - diagnose
-Created matrices for object and projection
-finished draw tri routine
-enabled line art
-removed value assignment code, moved to struct def
+	Fixed operator mapping
+	Rendering in a glitchy ortho - diagnose
+	Created matrices for object and projection
+	finished draw tri routine
+	enabled line art
+	removed value assignment code, moved to struct def
 
 28/10/2020
-diagnosed failed rendering
-Finished object rendering algo
-enable movement independent of camera
-object cube missing top and bottom
-object cube not matching up with other cube -  diagnose
-binding camera rotation to mouse
-redo rotation of camera
-Added matrix to camera
+	diagnosed failed rendering
+	Finished object rendering algo
+	enable movement independent of camera
+	object cube missing top and bottom
+	object cube not matching up with other cube -  diagnose
+	binding camera rotation to mouse
+	redo rotation of camera
+	Added matrix to camera
 
 31/10/2020
-Halloween
-Found possible fix to improper camera movement
-camera is better but neeeds more fixes
+	Halloween
+	Found possible fix to improper camera movement
+	camera is better but neeeds more fixes
 
 1/11/2020
-Finally fixed rendering sequence
-Deprecating old rendering sequence
-Deprecating old wireframe renderer
-fixed cube model
-Added more cubes for testing
-Working on clipping algo
+	Finally fixed rendering sequence
+	Deprecating old rendering sequence
+	Deprecating old wireframe renderer
+	fixed cube model
+	Added more cubes for testing
+	Working on clipping algo
 
 8/11/2020
-Took a break
-Fixed clipping 1,2 points at far plane
-Fixed cube not rotating independently
-Seperated camera and cube rotation
-Fixed renderer to show missing face - the last face of a mesh was being ommited
+	Took a break
+	Fixed clipping 1,2 points at far plane
+	Fixed cube not rotating independently
+	Seperated camera and cube rotation
+	Fixed renderer to show missing face - the last face of a mesh was being ommited
 
 9/11/2020
-Seperated near and far clip functions
-Finalised far clip
+	Seperated near and far clip functions
+	Finalised far clip
 
 10/11/2020
-Finished clipping algo
-Connected to git
+	Finished clipping algo
+	Connected to git
 
 12/11/2020
-Clipping working mostly - glitchy around edges
-included methods to find normals
-Implementing shading models	- flat ambient and diffuse
-Noticing shapes forming on rendered. Not clipping related.
-added normal data to tris
+	Clipping working mostly - glitchy around edges
+	included methods to find normals
+	Implementing shading models	- flat ambient and diffuse
+	Noticing shapes forming on rendered. Not clipping related.
+	added normal data to tris
 
 13/11/2020
-Fixed clipping issues - moved projection after clip
-normalized normals in cross product
-Stopped acne due to depth filtering
+	Fixed clipping issues - moved projection after clip
+	normalized normals in cross product
+	Stopped acne due to depth filtering
 
 14/11/2020
-Fixed most warning messages regarding casting errors
-Added method to draw a buffer. Move regular drawing here
-Found issue causing artifacts on screen - depth buffer looped horizontally and clipped itself
+	Fixed most warning messages regarding casting errors
+	Added method to draw a buffer. Move regular drawing here
+	Found issue causing artifacts on screen - depth buffer looped horizontally and clipped itself
 
 15/11/2020
-Fixed depth buffer loop error
-Seriously considering GPU usage
-Implemented backface culling
-Implemented text libraries
-Implemented load from obj, added a second cube
+	Fixed depth buffer loop error
+	Seriously considering GPU usage
+	Implemented backface culling
+	Implemented text libraries
+	Implemented load from obj, added a second cube
 
 16/11/2020
-Implemented a single color per object
-Is now drawing a dragon
+	Implemented a single color per object
+	Is now drawing a dragon
 
 19/11/2020
-Cam normal is working properly
-Objects are rotated 
-Y and Z axis are swapped for some reason
-Added depth test tag
+	Cam normal is working properly
+	Objects are rotated 
+	Y and Z axis are swapped for some reason
+	Added depth test tag
+	BMP images can be loaded into program now
+
+20/11/2020
+	Textures can be drawn onto screen directly
+	Textures can be drawn to objects with texture coords. Doesnt work for clipping and is distorted.
+	Textured axes
+	Texturing not referencing proper locations
+	Fixed texture distortions
+	Fixed screen being one pixel too large
+
+21/11/2020
+	Worked out cube texturing by hand for testing. Noticed that cube is upside down, rotated around x by 180
+	Fixed settings to make release build work
+	Performance test - very good. Most time spent by sdl external functions
+	Included functions to print vectors to screen
+	Texture coords are clipped
+	
 
 To do for next user:
-Fix bad bfc
-Calculate barycentrics from clipping
+	Organize resource files
+	Make build location independent
+	Fix bad bfc
+	Add error catch to bmp
 
 Housekeeping:
-Fix cube mesh to be clockwise and complete
-Make sure barycentrics are recalculated at clipping
-Check if half size screens are actually benificial
+	Check if half size screens are actually beneficial
 
 Notes:
-At cam pitch yaw 0, 0 -> camera looking at x axis
+	At cam pitch yaw 0, 0 -> camera looking at x axis
 
 
 Render procedure:
-Setup
-For each object, 
-	render object
-Clean up
+	Setup
+	For each object, 
+		render object
+	Clean up
 
 Render obj:
 	check validity
@@ -144,26 +161,27 @@ Render obj:
 		draw
 
 
-Op functions
-Clear depth buffer
-Quick normalize
+Op functions:
+	Clear depth buffer
+	Quick normalize
 
-Op work
-Clip by object
-replace with const references
-do zipping realtime?
-find cause of slowdown with large tris
-reformat and folderize
-std::map or std::unordered map
-use gpu
-move all vendor functions into a discrete wrapper
-move wrapper and vendors into folder
-remove return of temporary values
-Load objects and textures only when needed, then cache
-use uint 32
-write deg conversion and ensure it is used everywhere
-add option to bake a model into the world space
-Catch errors from functions
-fix casting errors
-Seperate models and objects
-investigate Finite difference normal method - fast
+Op work:
+	Use GPU
+	Use VPU
+	Clip by object
+	replace with const references
+	do zipping realtime?
+	find cause of slowdown with large tris
+	reformat and folderize
+	std::map or std::unordered map
+	move all vendor functions into a discrete wrapper
+	move wrapper and vendors into folder
+	remove return of temporary values
+	Load objects and textures only when needed, then cache
+	use uint 32
+	write deg conversion and ensure it is used everywhere
+	add option to bake a model into the world space
+	Catch errors from functions
+	fix casting errors
+	Seperate models and objects
+	investigate Finite difference normal method - fast

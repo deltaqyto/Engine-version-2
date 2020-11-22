@@ -24,3 +24,7 @@ std::vector <std::vector<std::string>> split(std::vector<std::string> input, cha
     }
     return out;
 }
+
+void print_vec3d(vec3d vector) {
+    std::cout << vector.x << ' ' << vector.y << ' ' << vector.z << ' ' << vector.q << std::endl;
+}

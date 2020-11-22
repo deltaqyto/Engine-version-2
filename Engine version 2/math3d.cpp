@@ -24,12 +24,12 @@ int normalize(vec3d* a) { // OPtimize
 	return 0;
 }
 
-vec3d vector_clip(float dist, vec3d* lineStart, vec3d* lineEnd)
+vec3d vector_clip(float dist, vec3d* lineStart, vec3d* lineEnd, float* tof)
 {
 	vec3d out;
-	float t = (dist - lineStart->z) / (lineEnd->z - lineStart->z);
-	out.x = lineStart->x + t * (lineEnd->x - lineStart->x);
-	out.y = lineStart->y + t * (lineEnd->y - lineStart->y);
+	*tof = (dist - lineStart->z) / (lineEnd->z - lineStart->z);
+	out.x = lineStart->x + *tof * (lineEnd->x - lineStart->x);
+	out.y = lineStart->y + *tof * (lineEnd->y - lineStart->y);
 	out.z = dist;
 	return out;
 }
